@@ -1,6 +1,6 @@
 import httpx
 
-with open("test_data.parquet", "rb") as f:
+with open("test_data_close.parquet", "rb") as f:
     b = f.read()
 
 result = httpx.post(

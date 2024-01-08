@@ -48,10 +48,10 @@ def root(req: ImfsRequest):
         emd = EMD()
         arr = emd(df.to_numpy(), max_imf=req.max_imf)
         columns = [f"{req.column}_{i}" for i in range(arr.shape[0])]
-        logging.debug(f"imfs of {req.column} is calculated")
+        logging.info(f"IMFs of {req.column} is calculated")
         imfs = pd.DataFrame(arr.T, columns=columns, index=df.index)
 
-        return imfs.to_parquet(engine="pyarrow")
+        return {"data": imfs.to_parquet(engine="pyarrow")}
     except Exception as e:
         logging.error(e)
         return {"error": str(e)}
