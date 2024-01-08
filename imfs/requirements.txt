@@ -2,3 +2,4 @@ EMD-signal
 fastapi
 uvicorn[standard]
 pandas
+fastparquet
