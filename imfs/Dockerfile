@@ -3,6 +3,7 @@ FROM python:3.12
 WORKDIR /usr/src/app
 EXPOSE 8000
 ENV PORT 8000
+ENV HOST 0.0.0.0
 
 COPY requirements.txt ./
 RUN pip install --upgrade pip
