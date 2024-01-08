@@ -1,0 +1,8 @@
+version: "3"
+
+services:
+  imfs:
+    build:
+      context: ./imfs
+    ports:
+      - "8765:8000"
