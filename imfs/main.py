@@ -18,7 +18,7 @@ class ImfsRequest(BaseModel):
 
 @app.post("/")
 def root(req: ImfsRequest):
-    df = pd.read_parquet(BytesIO(req.parquet))
+    df = pd.read_parquet(BytesIO(req.parquet), engine="pyarrow")
 
     emd = EMD()
     arr = emd(df.to_numpy(), max_imf=req.max_imf)
@@ -26,7 +26,4 @@ def root(req: ImfsRequest):
     logging.debug(f"imfs of {req.column} is calculated")
     imfs = pd.DataFrame(arr.T, columns=columns, index=df.index)
 
-    f = BytesIO()
-    imfs.to_parquet(f)
-
-    return {"column": req.column, "max_imfs": req.max_imfs, "content": f.read()}
+    return imfs.to_parquet(engine="pyarrow")
