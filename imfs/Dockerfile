@@ -1,6 +1,7 @@
 FROM python:3.12
 
 WORKDIR /usr/src/app
+EXPOSE 8000
 
 COPY requirements.txt ./
 RUN pip install --upgrade pip
