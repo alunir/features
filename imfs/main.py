@@ -1,27 +1,17 @@
-import logging
+from logging import getLogger, StreamHandler
 from io import BytesIO
 
 import pandas as pd
 from PyEMD import EMD
-from pydantic import BaseModel
 
-from fastapi import FastAPI, Request, status
-from fastapi.responses import JSONResponse
-from fastapi.exceptions import RequestValidationError
+from fastapi import FastAPI, Form, File, UploadFile
+from fastapi.responses import Response
 
 app = FastAPI()
 
-
-@app.exception_handler(RequestValidationError)
-async def handler(request: Request, exc: RequestValidationError):
-    logging.warning(exc)
-    return JSONResponse(content={}, status_code=status.HTTP_422_UNPROCESSABLE_ENTITY)
-
-
-class ImfsRequest(BaseModel):
-    parquet: bytes
-    column: str
-    max_imfs: int
+logger = getLogger(__name__)
+logger.addHandler(StreamHandler())
+logger.setLevel("INFO")
 
 
 """
@@ -41,17 +31,22 @@ Raises:
 
 
 @app.post("/")
-def root(req: ImfsRequest):
-    try:
-        df = pd.read_parquet(BytesIO(req.parquet), engine="pyarrow")
+def root(
+    file: UploadFile = File(...), column: str = Form(...), max_imfs: int = Form(...)
+):
+    b = file.file.read()
+    df = pd.read_parquet(BytesIO(b), engine="pyarrow")
 
-        emd = EMD()
-        arr = emd(df.to_numpy(), max_imf=req.max_imf)
-        columns = [f"{req.column}_{i}" for i in range(arr.shape[0])]
-        logging.info(f"IMFs of {req.column} is calculated")
-        imfs = pd.DataFrame(arr.T, columns=columns, index=df.index)
+    series = df.to_numpy().reshape(len(df)).astype(float)
 
-        return {"data": imfs.to_parquet(engine="pyarrow")}
-    except Exception as e:
-        logging.error(e)
-        return {"error": str(e)}
+    emd = EMD()
+    arr = emd(series, max_imf=max_imfs)
+    columns = [f"{column}_{i}" for i in range(arr.shape[0])]
+    logger.info(f"IMFs of {column} is calculated")
+    imfs = pd.DataFrame(arr.T, columns=columns, index=df.index)
+
+    b = imfs.to_parquet(engine="pyarrow")
+    return Response(
+        b,
+        headers={"Content-Disposition": f"attachment; filename={column}_imfs.parquet"},
+    )
