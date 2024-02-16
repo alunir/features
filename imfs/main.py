@@ -40,7 +40,7 @@ def root(
     columns = [f"{column}_{i}" for i in range(imfnum, 1, -1)]
     imfdf = pd.DataFrame(cum_imfs.T, columns=columns, index=df.index)
 
-    b = df.join(imfdf).to_parquet(engine="pyarrow")
+    b = imfdf.to_parquet(engine="pyarrow")
     return Response(
         b,
         headers={"Content-Disposition": f"attachment; filename={column}_imfs.parquet"},
