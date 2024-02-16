@@ -1,18 +1,14 @@
-from logging import getLogger, StreamHandler
 from io import BytesIO
 
+import numpy as np
 import pandas as pd
 from PyEMD import EMD
 
-from fastapi import FastAPI, Form, File, UploadFile
+from fastapi import Form, File, UploadFile, APIRouter
 from fastapi.responses import Response
 
-app = FastAPI()
 
-logger = getLogger(__name__)
-logger.addHandler(StreamHandler())
-logger.setLevel("INFO")
-
+router = APIRouter()
 
 """
 This function calculates the instantaneous modulation frequency (IMF) of a given time series.
@@ -30,22 +26,21 @@ Raises:
 """
 
 
-@app.post("/")
+@router.post("/")
 def root(
-    file: UploadFile = File(...), column: str = Form(...), max_imfs: int = Form(...)
+    file: UploadFile = File(...), column: str = Form(...), max_imf: int = Form(...)
 ):
     b = file.file.read()
     df = pd.read_parquet(BytesIO(b), engine="pyarrow")
 
-    series = df.to_numpy().reshape(len(df)).astype(float)
-
     emd = EMD()
-    arr = emd(series, max_imf=max_imfs)
-    columns = [f"{column}_{i}" for i in range(arr.shape[0])]
-    logger.info(f"IMFs of {column} is calculated")
-    imfs = pd.DataFrame(arr.T, columns=columns, index=df.index)
+    imfs = emd(df[column].values, max_imf=max_imf)
+    imfnum = imfs.shape[0]
+    cum_imfs = df[column].values - np.cumsum([imf for imf in imfs[:0:-1]], axis=0)
+    columns = [f"{column}_{i}" for i in range(imfnum, 1, -1)]
+    imfdf = pd.DataFrame(cum_imfs.T, columns=columns, index=df.index)
 
-    b = imfs.to_parquet(engine="pyarrow")
+    b = df.join(imfdf).to_parquet(engine="pyarrow")
     return Response(
         b,
         headers={"Content-Disposition": f"attachment; filename={column}_imfs.parquet"},

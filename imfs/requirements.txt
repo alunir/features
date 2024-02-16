@@ -1,6 +1,0 @@
-EMD-signal
-fastapi
-uvicorn[standard]
-pandas
-pyarrow
-python-multipart
