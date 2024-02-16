@@ -1,7 +1,7 @@
 from logging import getLogger, StreamHandler
 
 from fastapi import FastAPI
-from imfs import router as imfs_router
+from imfs.main import router as imfs_router
 
 app = FastAPI()
 
