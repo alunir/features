@@ -1,8 +1,7 @@
 from io import BytesIO
 
-import numpy as np
 import pandas as pd
-from PyEMD import EMD
+import emd
 
 from fastapi import Form, File, UploadFile, APIRouter
 from fastapi.responses import Response
@@ -33,12 +32,10 @@ def root(
     b = file.file.read()
     df = pd.read_parquet(BytesIO(b), engine="pyarrow")
 
-    emd = EMD()
-    imfs = emd(df[column].values, max_imf=max_imf)
-    imfnum = imfs.shape[0]
-    cum_imfs = df[column].values - np.cumsum([imf for imf in imfs[:0:-1]], axis=0)
-    columns = [f"{column}_{i}" for i in range(imfnum, 1, -1)]
-    imfdf = pd.DataFrame(cum_imfs.T, columns=columns, index=df.index)
+    imfs = emd.sift.sift(df[column].values, max_imfs=max_imf)
+    imfnum = imfs.shape[1]
+    columns = [f"{column}_{i}" for i in range(imfnum)]
+    imfdf = pd.DataFrame(imfs, columns=columns, index=df.index)
 
     b = imfdf.to_parquet(engine="pyarrow")
     return Response(
