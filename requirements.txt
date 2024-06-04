@@ -5,3 +5,5 @@ pandas
 pyarrow
 python-multipart
 emd
+git+https://${GITHUB_TOKEN}@github.com/alunir/mlfinlab.git@1.0.4
+scikit-learn==1.5.0

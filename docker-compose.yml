@@ -1,8 +1,8 @@
-version: "3"
-
 services:
   app:
     build:
       context: .
+      args:
+        - GITHUB_TOKEN=${GITHUB_TOKEN}
     ports:
       - "8765:8000"
