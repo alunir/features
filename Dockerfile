@@ -1,9 +1,9 @@
-FROM python:3.12
+FROM python:3.12-slim
 
 WORKDIR /usr/src/app
 EXPOSE 8000
 
-RUN apt-get update && apt-get install -y libopenblas-dev
+RUN apt-get update && apt-get install -y libopenblas-dev git build-essential
 
 RUN pip install --upgrade pip
 
@@ -13,6 +13,6 @@ ENV GITHUB_TOKEN=$GITHUB_TOKEN
 COPY requirements.txt .
 RUN pip install -r requirements.txt
 
-COPY . .
-
-CMD ["uvicorn", "main:app", "--reload", "--host", "0.0.0.0", "--port", "8000"]
+ARG BASE_DIR
+ENV BASE_DIR=$BASE_DIR
+COPY ${BASE_DIR} .

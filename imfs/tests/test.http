@@ -1,8 +1,0 @@
-POST http://localhost:8765 HTTP/1.1
-content-type: application/json
-
-{
-    "parquet": "lorem ipsum dolor sit amet, consectetur",
-    "column": "Close",
-    "max_imfs": 10
-}

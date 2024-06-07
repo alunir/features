@@ -1,7 +1,9 @@
 .DS_Store
 
-history
-
 .env
 
 __pycache__
+
+bkp
+
+serviceaccount.json

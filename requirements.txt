@@ -1,9 +1,12 @@
-EMD-signal
-fastapi
-uvicorn[standard]
 pandas
+pandas-gbq
 pyarrow
 python-multipart
 emd
 git+https://${GITHUB_TOKEN}@github.com/alunir/mlfinlab.git@1.0.4
 scikit-learn==1.5.0
+msgpack
+dataclasses
+pymarketstore
+google-cloud-bigquery
+websockets

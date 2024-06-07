@@ -1,8 +1,18 @@
 services:
-  app:
+  ohlcv:
     build:
       context: .
       args:
         - GITHUB_TOKEN=${GITHUB_TOKEN}
+        - BASE_DIR=./services/ohlcv
     ports:
       - "8765:8000"
+    environment:
+      - LOG_LEVEL=info
+      - GOOGLE_APPLICATION_CREDENTIALS=serviceaccount.json
+      - DAYS=1
+    env_file:
+      - .env
+    command: ["python3", "main.py"]
+    volumes:
+      - ./services/ohlcv:/usr/src/app
