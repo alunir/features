@@ -1,0 +1,56 @@
+services:
+  sqlc:
+    image: kjconroy/sqlc:latest
+    volumes:
+      - ".:/src"
+    working_dir: "/src"
+    command: generate
+
+  migration:
+    image: ghcr.io/tk42/goose:latest
+    platform: linux/amd64
+    env_file:
+      # - .env.local
+      - .env
+    working_dir: "/src"
+    volumes:
+      - "./sql/schema:/src"
+    depends_on:
+      - sqlc
+      - postgres
+    command: "up"
+
+  postgres:
+    image: postgres:latest
+    env_file:
+      - .env.local
+    ports:
+      - 5432:5432
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+
+  pgweb:
+    image: "sosedoff/pgweb:latest"
+    env_file:
+      - .env.local
+    depends_on:
+      - postgres
+    ports:
+      - 8081:8081
+    command:
+      - sleep 3;
+      - /usr/bin/pgweb
+      - --bind=0.0.0.0
+      - --listen=8081
+
+  tbls:
+    image: ghcr.io/k1low/tbls:latest
+    volumes:
+      - ".:/work"
+    working_dir: "/work"
+    command: doc postgres://user:pass@postgres:5432/db?sslmode=disable
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_data:

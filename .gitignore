@@ -7,3 +7,10 @@ __pycache__
 bkp
 
 serviceaccount.json
+
+
+all_df.pkl
+data.csv
+
+data
+logs
