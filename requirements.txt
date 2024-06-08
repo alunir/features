@@ -1,5 +1,4 @@
 pandas
-pandas-gbq
 pyarrow
 python-multipart
 emd
@@ -8,5 +7,6 @@ scikit-learn==1.5.0
 msgpack
 dataclasses
 pymarketstore
-google-cloud-bigquery
 websockets
+surrealdb
+asyncpg

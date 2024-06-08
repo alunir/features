@@ -1,24 +1,38 @@
 import os
 import re
+import logging
 import msgpack
 import asyncio
 import websockets
-import pandas_gbq
 import pandas as pd
-import logging
+from typing import List
+from .util.types import OHLCV
+from .util.pg import Connection
+from .util.sd import SurrealDBStore
 import pymarketstore as pymkts
-
-from google.oauth2 import service_account
-from google.cloud import bigquery
 
 
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO").upper())
 
 
-cred = service_account.Credentials.from_service_account_file(
-    "serviceaccount.json",
-    scopes=["https://www.googleapis.com/auth/cloud-platform"],
-)
+def OHLCV_from_df(df: pd.DataFrame) -> List[OHLCV]:
+    if "Epoch" not in df.columns:
+        df = df.reset_index().rename(columns={"index": "Epoch"})
+    v: List[OHLCV] = []
+    for row in df.itertuples():
+        print(row)
+        d = OHLCV(
+            1,
+            row.Epoch.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            row.Open,
+            row.High,
+            row.Low,
+            row.Close,
+            row.Volume,
+            row.Number,
+        )
+        v += [d]
+    return v
 
 
 def msg_to_df(msg: dict) -> pd.DataFrame:
@@ -37,47 +51,10 @@ def msg_to_df(msg: dict) -> pd.DataFrame:
     return df
 
 
-def push_bigquery(df: pd.DataFrame) -> None:
-    project_id = os.getenv("PROJECT_ID")
-    assert project_id is not None, "PROJECT_ID is None"
-    dataset_id = os.getenv("DATASET_ID")
-    assert dataset_id is not None, "DATASET_ID is None"
-    table_id = os.getenv("TABLE_ID")
-    assert table_id is not None, "TABLE_ID is None"
-
-    logging.debug(f"Pushing to BigQuery: {len(df)} rows")
-
-    # Define the table ID
-    destination_table = f"{project_id}.{dataset_id}.{table_id}"
-    source_table = f"{project_id}.tmp.{dataset_id}-{table_id}"
-
-    # Insert the DataFrame into the BigQuery table
-    pandas_gbq.to_gbq(
-        df, source_table, project_id=project_id, if_exists="replace", credentials=cred
-    )
-
-    # push to bigquery
-    client = bigquery.Client(project=project_id, credentials=cred)
-
-    # UPSERT 操作のための MERGE ステートメント
-    merge_query = f"""
-        MERGE INTO {destination_table} AS target
-        USING {source_table} AS source
-        ON target.Epoch = source.Epoch
-        WHEN MATCHED THEN
-            UPDATE SET target.Open = source.Open, target.High = source.High, target.Low = source.Low, target.Close = source.Close, target.Volume = source.Volume, target.Number = source.Number
-        WHEN NOT MATCHED THEN
-            INSERT (Epoch, Open, High, Low, Close, Volume, Number) VALUES (source.Epoch, source.Open, source.High, source.Low, source.Close, source.Volume, source.Number)
-    """.format(
-        destination_table=destination_table,
-        source_table=source_table,
-    )
-
-    # MERGE ステートメントの実行
-    client.query(merge_query)
-
-
 async def main():
+    store = SurrealDBStore()
+    pg = Connection()
+
     marketstore_url = os.environ.get("MARKETSTORE_URL", None)
 
     client = pymkts.Client(endpoint=f"http://{marketstore_url}:5993/rpc")
@@ -96,7 +73,10 @@ async def main():
             df = reply.first().df()
             logging.info(f"Got {len(df)} rows")
 
-            push_bigquery(df)
+            data = OHLCV_from_df(df)
+
+            await store.send(data)
+            await pg.send(data)
 
             pat = re.compile(r"^Binance_ETH-USDT/*")
             while True:
@@ -123,7 +103,10 @@ async def main():
                             data = msg["data"]
                             logging.debug(f"Received message: {data}")
                             df = msg_to_df(data)
-                            push_bigquery(df)
+                            data = OHLCV_from_df(df)
+                            await store.send(data)
+                            await pg.send(data)
+
         except KeyboardInterrupt:
             return
         except Exception as e:
