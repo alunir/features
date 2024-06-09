@@ -3,13 +3,7 @@ from dataclasses import dataclass
 
 
 @dataclass
-class Data:
-    Instrument: int
-    Epoch: datetime
-
-
-@dataclass
-class OHLCV(Data):
+class OHLCV:
     Instrument: int
     Epoch: datetime
     Open: float
@@ -21,7 +15,7 @@ class OHLCV(Data):
 
 
 @dataclass
-class VpinOHLCV(Data):
+class VpinOHLCV:
     Instrument: int
     VPIN: int
     Epoch: datetime
@@ -36,7 +30,7 @@ class VpinOHLCV(Data):
 
 
 @dataclass
-class Features202406(Data):
+class Features202406:
     Instrument: int
     VPIN: int
     Epoch: datetime

@@ -2,12 +2,11 @@ import os
 import json
 import logging
 from typing import List
-from .types import Data
 import redis.asyncio as redis
 from dataclasses import asdict
 
 
-def convert_data(data: List[Data]) -> List[dict]:
+def convert_data(data: List) -> List[dict]:
     v = []
     for ohlcv in data:
         d = asdict(ohlcv)
@@ -34,8 +33,6 @@ class RedisStore:
 
     async def connection_test(self):
         try:
-            # resp = await self.r.auth(self.redis_pass)
-            # logging.info(f"Redis auth response: {resp}")
             async with self.r as conn:
                 await conn.ping()
             logging.info(
@@ -48,11 +45,11 @@ class RedisStore:
             )
             return False
 
-    async def send(self, data: List[Data], channel: str) -> None:
+    async def send(self, data: List, channel: str) -> None:
         """Publish data to Redis PubSub channel
 
         Args:
-            data (List[Data]): data
+            data (List): data
             db (int): Redis database number
         """
         try:
@@ -64,20 +61,4 @@ class RedisStore:
         except redis.ConnectionError as e:
             logging.error(
                 f"Failed to publish data to Redis PubSub channel {channel}. Error: {e}"
-            )
-
-    async def subscribe(self, channel: str):
-        """Subscribe to Redis PubSub channel
-
-        Args:
-            channel (str): channel name
-        """
-        try:
-            async with self.r.pubsub() as pubsub:
-                await pubsub.subscribe(channel)
-                async for message in pubsub.iter():
-                    logging.info(f"Received message: {message}")
-        except redis.ConnectionError as e:
-            logging.error(
-                f"Failed to subscribe to Redis PubSub channel {channel}. Error: {e}"
             )

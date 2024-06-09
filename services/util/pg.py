@@ -5,9 +5,7 @@
 import os
 import logging
 import asyncpg
-from datetime import datetime
 from typing import List
-from .types import Data
 from dataclasses import astuple
 
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO").upper())
@@ -23,6 +21,21 @@ High = EXCLUDED.High,
 Low = EXCLUDED.Low,
 Close = EXCLUDED.Close,
 Volume = EXCLUDED.Volume,
+Number = EXCLUDED.Number;
+"""
+
+UPSERT_VPIN_OHLCV_QUERY = """
+INSERT INTO vpin_ohlcv (Instrument, VPIN, Epoch, Open, High, Low, Close, Volume, BuyVolume, SellVolume, Number)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+ON CONFLICT (Instrument, VPIN, Epoch)
+DO UPDATE SET
+Open = EXCLUDED.Open,
+High = EXCLUDED.High,
+Low = EXCLUDED.Low,
+Close = EXCLUDED.Close,
+Volume = EXCLUDED.Volume,
+BuyVolume = EXCLUDED.BuyVolume,
+SellVolume = EXCLUDED.SellVolume,
 Number = EXCLUDED.Number;
 """
 
@@ -59,28 +72,28 @@ class Connection:
 
         logging.info("Connected to Postgres")
 
-    async def get_last_epoch(self, table: str) -> List:
-        async with self.conn.transaction():
-            return await self.conn.fetch(
-                f"SELECT * FROM {table} ORDER BY Epoch DESC LIMIT 1"
-            )
-
-    async def send(
-        self,
-        data: List[Data],
-    ) -> None:
+    async def send(self, data: List, table: str) -> None:
         """
         Upserts OHLCV data into the Postgres database
         """
         logging.debug(f"Inserting {len(data)} rows into Postgres")
+        match table:
+            case "ohlcv":
+                query = UPSERT_OHLCV_QUERY
+            case "vpin_ohlcv":
+                query = UPSERT_VPIN_OHLCV_QUERY
+            case "features_202406":
+                query = UPSERT_FEATURES_202406_QUERY
+            case _:
+                raise ValueError(f"Table {table} not supported")
         async with self.conn.transaction():
-            await self.conn.executemany(UPSERT_OHLCV_QUERY, [astuple(d) for d in data])
+            await self.conn.executemany(query, [astuple(d) for d in data])
 
-    async def fetch(self, table: str, last_epoch: datetime) -> List:
+    async def fetch(self, target: str, source: str) -> List:
         """
         Fetches data from the Postgres database
         """
         async with self.conn.transaction():
             return await self.conn.fetch(
-                f"SELECT * FROM {table} WHERE Epoch > $1 ORDER BY Epoch ASC", last_epoch
+                f"SELECT * FROM {target} WHERE Epoch > (SELECT Epoch FROM {source} ORDER BY Epoch DESC LIMIT 1) ORDER BY Epoch ASC"
             )
