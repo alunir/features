@@ -7,7 +7,6 @@ import numpy as np
 import pandas as pd
 from typing import List
 import redis.asyncio as redis
-from datetime import datetime, timedelta
 from util.types import VpinOHLCV, Features202406
 from util.pg import Connection
 from util.rd import RedisStore
@@ -18,7 +17,7 @@ from mlfinlab.features.fracdiff import frac_diff_ffd
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO").upper())
 
 
-def make_features(data: pd.DataFrame, WINDOW: int = 16, max_imf=8):
+def make_features(data: pd.DataFrame, max_imf=8):
     prices = np.expm1(data.Close.rename("Last"))
     ask = np.expm1(data.High.rename("Ask"))
     bid = np.expm1(data.Low.rename("Bid"))
@@ -123,14 +122,18 @@ async def main():
 
             # fetch vpin_ohlcv from postgres again
             ohlcvs = await fetch_vpin_ohlcv(pg)
+            if len(ohlcvs) == 0:
+                continue
+
             df = pd.DataFrame(ohlcvs)
             df.index = df["Epoch"]
-
-            features_df = make_features(
-                df.drop(columns=["Volume", "SellVolume"]).rename(
-                    columns={"BuyVolume": "Volume"}
-                )
+            df = df.drop(columns=["Volume", "SellVolume"]).rename(
+                columns={"BuyVolume": "Volume"}
             )
+            # change all df values to float
+            df = df.astype(float)
+
+            features_df = make_features(df)
 
             logging.debug(f"features_df: {len(features_df)} rows")
 

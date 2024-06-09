@@ -37,7 +37,7 @@ def VpinOHLCV_from_df(df: pd.DataFrame) -> List[VpinOHLCV]:
     return v
 
 
-async def fetch_ohlcv(pg) -> List[OHLCV]:
+async def fetch_ohlcv(pg: Connection) -> List[OHLCV]:
     ohlcvs = await pg.fetch("ohlcv", "vpin_ohlcv")
     return [
         OHLCV(
@@ -85,6 +85,9 @@ async def main():
 
                 # fetch ohlcv from postgres again
                 ohlcvs = await fetch_ohlcv(pg)
+                if len(ohlcvs) == 0:
+                    continue
+
                 df = pd.DataFrame(ohlcvs)
                 df.index = df["Epoch"]
 
