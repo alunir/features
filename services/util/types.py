@@ -1,10 +1,11 @@
+from datetime import datetime
 from dataclasses import dataclass
 
 
 @dataclass
 class OHLCV:
     Instrument: int
-    Epoch: str
+    Epoch: datetime
     Open: float
     High: float
     Low: float

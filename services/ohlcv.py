@@ -1,14 +1,15 @@
 import os
 import re
+import traceback
 import logging
 import msgpack
 import asyncio
 import websockets
 import pandas as pd
 from typing import List
-from .util.types import OHLCV
-from .util.pg import Connection
-from .util.sd import SurrealDBStore
+from util.types import OHLCV
+from util.pg import Connection
+from util.sd import SurrealDBStore
 import pymarketstore as pymkts
 
 
@@ -20,10 +21,9 @@ def OHLCV_from_df(df: pd.DataFrame) -> List[OHLCV]:
         df = df.reset_index().rename(columns={"index": "Epoch"})
     v: List[OHLCV] = []
     for row in df.itertuples():
-        print(row)
         d = OHLCV(
-            1,
-            row.Epoch.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            1,  # Instrument ID 1 : Binance_ETH-USDT
+            row.Epoch.tz_localize(None),
             row.Open,
             row.High,
             row.Low,
@@ -41,7 +41,7 @@ def msg_to_df(msg: dict) -> pd.DataFrame:
     )
     df["Epoch"] = pd.to_datetime(df["Epoch"], unit="s")
     df["Epoch"] = df["Epoch"].dt.tz_localize(None)
-    df["Epoch"] = df["Epoch"].dt.strftime("%Y-%m-%d %H:%M:%S")
+    # df["Epoch"] = df["Epoch"].dt.strftime("%Y-%m-%d %H:%M:%S")
     df["Open"] = df["Open"].astype(float)
     df["High"] = df["High"].astype(float)
     df["Low"] = df["Low"].astype(float)
@@ -51,32 +51,40 @@ def msg_to_df(msg: dict) -> pd.DataFrame:
     return df
 
 
+async def send(df: pd.DataFrame, store: SurrealDBStore, pg: Connection):
+    data = OHLCV_from_df(df)
+    await asyncio.gather(store.send(data), pg.send(data))
+    logging.info("Sent all records to Postgres and SurrealDB")
+
+
 async def main():
+    # Wait for surrealdb start
     store = SurrealDBStore()
+    await store.connection_test()
+
     pg = Connection()
+    await pg.connection_test()
 
     marketstore_url = os.environ.get("MARKETSTORE_URL", None)
 
     client = pymkts.Client(endpoint=f"http://{marketstore_url}:5993/rpc")
 
-    days = int(os.environ.get("DAYS", 1))
+    backoff_days = int(os.environ.get("BACKOFF_DAYS", 1))
     ping_interval = os.environ.get("PING_INTERVAL", 120)
     ping_timeout = os.environ.get("PING_TIMEOUT", None)
 
     logging.info("Connected to marketstore")
+
     while True:
         try:
             param = pymkts.Params(
-                "Binance_ETH-USDT", "1Min", "OHLCV", limit=60 * 24 * days
+                "Binance_ETH-USDT", "1Min", "OHLCV", limit=60 * 24 * backoff_days
             )
             reply = client.query(param)
             df = reply.first().df()
             logging.info(f"Got {len(df)} rows")
 
-            data = OHLCV_from_df(df)
-
-            await store.send(data)
-            await pg.send(data)
+            await send(df, store, pg)
 
             pat = re.compile(r"^Binance_ETH-USDT/*")
             while True:
@@ -103,13 +111,12 @@ async def main():
                             data = msg["data"]
                             logging.debug(f"Received message: {data}")
                             df = msg_to_df(data)
-                            data = OHLCV_from_df(df)
-                            await store.send(data)
-                            await pg.send(data)
+                            await send(df, store, pg)
 
         except KeyboardInterrupt:
             return
         except Exception as e:
+            logging.warning(traceback.format_exc())
             logging.warning(e)
         await asyncio.sleep(5)
 
