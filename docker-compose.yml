@@ -34,6 +34,22 @@ services:
     volumes:
       - ./services:/usr/src/app
 
+  features-202406:
+    build:
+      context: .
+      args:
+        - GITHUB_TOKEN=${GITHUB_TOKEN}
+        - BASE_DIR=./services
+    ports:
+      - "8767:8000"
+    environment:
+      - LOG_LEVEL=info
+    env_file:
+      - .env
+    command: ["python3", "features-202406.py"]
+    volumes:
+      - ./services:/usr/src/app
+
   redis:
     image: redis:latest
     ports:
