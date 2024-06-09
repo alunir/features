@@ -22,7 +22,7 @@ class RedisStore:
         self.redis_port = os.environ.get("REDIS_PORT", "6379")
         self.redis_db = os.environ.get("REDIS_DB", "0")
         self.redis_pass = os.environ.get("REDIS_PASSWORD", None)
-        assert self.redis_pass, "REDIS_PASS is not set"
+        assert self.redis_pass, "REDIS_PASSWORD is not set"
 
         self.r = redis.from_url(
             f"redis://{self.redis_host}:{self.redis_port}/{self.redis_db}",

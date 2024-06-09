@@ -35,9 +35,9 @@ services:
   #     - ./services:/usr/src/app
 
   redis:
-    image: redis
+    image: redis:latest
     ports:
-      - "6379:6379"
+      - "9876:6379"
     command: ["redis-server", "/etc/redis/redis.conf"]
     volumes:
       - ./redis.conf:/etc/redis/redis.conf
