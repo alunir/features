@@ -15,7 +15,7 @@ type Exchange struct {
 }
 
 type Features202406 struct {
-	ID         int64
+	ID         sql.NullInt64
 	Instrument int64
 	Vpin       int64
 	Epoch      time.Time
@@ -64,7 +64,7 @@ type Instrument struct {
 }
 
 type Ohlcv struct {
-	ID         int64
+	ID         sql.NullInt64
 	Instrument int64
 	Epoch      time.Time
 	Open       string
@@ -81,7 +81,7 @@ type Vpin struct {
 }
 
 type VpinOhlcv struct {
-	ID         int64
+	ID         sql.NullInt64
 	Instrument int64
 	Vpin       int64
 	Epoch      time.Time

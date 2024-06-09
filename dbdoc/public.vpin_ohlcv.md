@@ -25,13 +25,15 @@
 | ---- | ---- | ---------- |
 | vpin_ohlcv_instrument_fkey | FOREIGN KEY | FOREIGN KEY (instrument) REFERENCES instrument(id) |
 | vpin_ohlcv_vpin_fkey | FOREIGN KEY | FOREIGN KEY (vpin) REFERENCES vpin(id) |
-| vpin_ohlcv_pkey | PRIMARY KEY | PRIMARY KEY (id) |
+| vpin_ohlcv_pkey | PRIMARY KEY | PRIMARY KEY (instrument, vpin, epoch) |
+| vpin_ohlcv_id_key | UNIQUE | UNIQUE (id) |
 
 ## Indexes
 
 | Name | Definition |
 | ---- | ---------- |
-| vpin_ohlcv_pkey | CREATE UNIQUE INDEX vpin_ohlcv_pkey ON public.vpin_ohlcv USING btree (id) |
+| vpin_ohlcv_pkey | CREATE UNIQUE INDEX vpin_ohlcv_pkey ON public.vpin_ohlcv USING btree (instrument, vpin, epoch) |
+| vpin_ohlcv_id_key | CREATE UNIQUE INDEX vpin_ohlcv_id_key ON public.vpin_ohlcv USING btree (id) |
 
 ## Relations
 

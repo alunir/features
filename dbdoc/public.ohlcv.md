@@ -21,15 +21,15 @@
 | Name | Type | Definition |
 | ---- | ---- | ---------- |
 | ohlcv_instrument_fkey | FOREIGN KEY | FOREIGN KEY (instrument) REFERENCES instrument(id) |
-| ohlcv_pkey | PRIMARY KEY | PRIMARY KEY (id) |
-| ohlcv_instrument_epoch_key | UNIQUE | UNIQUE (instrument, epoch) |
+| ohlcv_pkey | PRIMARY KEY | PRIMARY KEY (instrument, epoch) |
+| ohlcv_id_key | UNIQUE | UNIQUE (id) |
 
 ## Indexes
 
 | Name | Definition |
 | ---- | ---------- |
-| ohlcv_pkey | CREATE UNIQUE INDEX ohlcv_pkey ON public.ohlcv USING btree (id) |
-| ohlcv_instrument_epoch_key | CREATE UNIQUE INDEX ohlcv_instrument_epoch_key ON public.ohlcv USING btree (instrument, epoch) |
+| ohlcv_pkey | CREATE UNIQUE INDEX ohlcv_pkey ON public.ohlcv USING btree (instrument, epoch) |
+| ohlcv_id_key | CREATE UNIQUE INDEX ohlcv_id_key ON public.ohlcv USING btree (id) |
 
 ## Relations
 

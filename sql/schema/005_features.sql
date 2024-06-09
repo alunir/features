@@ -1,6 +1,5 @@
 -- +goose Up
 CREATE TABLE IF NOT EXISTS features_202406 (
-    id BIGSERIAL PRIMARY KEY,
     Instrument bigint NOT NULL,
     VPIN bigint NOT NULL,
     Epoch TIMESTAMP NOT NULL,
@@ -40,8 +39,8 @@ CREATE TABLE IF NOT EXISTS features_202406 (
     Ask NUMERIC,
     Bid NUMERIC,
     Last NUMERIC,
-    FOREIGN KEY (Instrument) REFERENCES instrument(id),
-    FOREIGN KEY (VPIN) REFERENCES vpin(id)
+    PRIMARY KEY (Instrument, VPIN, Epoch),
+    FOREIGN KEY (Instrument) REFERENCES instrument(id)
 );
 
 -- +goose Down

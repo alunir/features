@@ -12,6 +12,20 @@ from dataclasses import astuple
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO").upper())
 
 
+UPSERT_OHLCV_QUERY = """
+INSERT INTO ohlcv (Instrument, Epoch, Open, High, Low, Close, Volume, Number)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+ON CONFLICT (Instrument, Epoch)
+DO UPDATE SET
+Open = EXCLUDED.Open,
+High = EXCLUDED.High,
+Low = EXCLUDED.Low,
+Close = EXCLUDED.Close,
+Volume = EXCLUDED.Volume,
+Number = EXCLUDED.Number;
+"""
+
+
 class Connection:
     """
     Connection class to connect to the Postgres database
@@ -53,19 +67,4 @@ class Connection:
         """
         logging.debug(f"Inserting {len(data)} rows into Postgres")
         async with self.conn.transaction():
-            await self.conn.executemany(
-                """
-                INSERT INTO ohlcv (instrument, epoch, open, high, low, close, volume, number)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-                ON CONFLICT ON CONSTRAINT ohlcv_pkey
-                DO UPDATE
-                SET instrument = EXCLUDED.instrument,
-                    open = EXCLUDED.open,
-                    high = EXCLUDED.high,
-                    low = EXCLUDED.low,
-                    close = EXCLUDED.close,
-                    volume = EXCLUDED.volume,
-                    number = EXCLUDED.number;
-                """,
-                [astuple(d) for d in data],
-            )
+            await self.conn.executemany(UPSERT_OHLCV_QUERY, [astuple(d) for d in data])

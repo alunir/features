@@ -1,4 +1,13 @@
 services:
+  pgweb:
+    image: sosedoff/pgweb
+    container_name: surrealdb-pgweb
+    ports:
+      - "8081:8081"
+    env_file:
+      - .env
+    restart: on-failure
+
   ohlcv:
     build:
       context: .
@@ -18,21 +27,21 @@ services:
     depends_on:
       - surrealdb
 
-  # vpin-1e3:
-  #   build:
-  #     context: .
-  #     args:
-  #       - GITHUB_TOKEN=${GITHUB_TOKEN}
-  #       - BASE_DIR=./services
-  #   ports:
-  #     - "8766:8000"
-  #   environment:
-  #     - LOG_LEVEL=info
-  #   env_file:
-  #     - .env
-  #   command: ["python3", "vpin-1e3.py"]
-  #   volumes:
-  #     - ./services:/usr/src/app
+  vpin-1e3:
+    build:
+      context: .
+      args:
+        - GITHUB_TOKEN=${GITHUB_TOKEN}
+        - BASE_DIR=./services
+    ports:
+      - "8766:8000"
+    environment:
+      - LOG_LEVEL=info
+    env_file:
+      - .env
+    command: ["python3", "vpin-1e3.py"]
+    volumes:
+      - ./services:/usr/src/app
 
   # https://docker.surrealdb.com/
   pd0:

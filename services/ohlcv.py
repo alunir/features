@@ -41,7 +41,6 @@ def msg_to_df(msg: dict) -> pd.DataFrame:
     )
     df["Epoch"] = pd.to_datetime(df["Epoch"], unit="s")
     df["Epoch"] = df["Epoch"].dt.tz_localize(None)
-    # df["Epoch"] = df["Epoch"].dt.strftime("%Y-%m-%d %H:%M:%S")
     df["Open"] = df["Open"].astype(float)
     df["High"] = df["High"].astype(float)
     df["Low"] = df["Low"].astype(float)

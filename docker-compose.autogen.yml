@@ -10,8 +10,8 @@ services:
     image: ghcr.io/tk42/goose:latest
     platform: linux/amd64
     env_file:
-      # - .env.local
-      - .env
+      - .env.local
+      # - .env
     working_dir: "/src"
     volumes:
       - "./sql/schema:/src"

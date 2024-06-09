@@ -7,6 +7,7 @@ package sqlc
 
 import (
 	"context"
+	"database/sql"
 	"time"
 )
 
@@ -53,14 +54,14 @@ func (q *Queries) CreateOhlcv(ctx context.Context, arg CreateOhlcvParams) (Ohlcv
 	return i, err
 }
 
-const deleteAgent = `-- name: DeleteAgent :one
+const delettOhlcv = `-- name: DelettOhlcv :one
 DELETE FROM ohlcv
 WHERE id = $1
 RETURNING id, instrument, epoch, open, high, low, close, volume, number
 `
 
-func (q *Queries) DeleteAgent(ctx context.Context, id int64) (Ohlcv, error) {
-	row := q.db.QueryRowContext(ctx, deleteAgent, id)
+func (q *Queries) DelettOhlcv(ctx context.Context, id sql.NullInt64) (Ohlcv, error) {
+	row := q.db.QueryRowContext(ctx, delettOhlcv, id)
 	var i Ohlcv
 	err := row.Scan(
 		&i.ID,
@@ -148,14 +149,14 @@ func (q *Queries) ListOhlcv(ctx context.Context, arg ListOhlcvParams) ([]Ohlcv, 
 	return items, nil
 }
 
-const updateAgent = `-- name: UpdateAgent :one
+const updateOhlcv = `-- name: UpdateOhlcv :one
 UPDATE ohlcv
 SET Open = $3, High = $4, Low = $5, Close = $6, Volume = $7, Number = $8
 WHERE Instrument = $1 AND Epoch = $2
 RETURNING id, instrument, epoch, open, high, low, close, volume, number
 `
 
-type UpdateAgentParams struct {
+type UpdateOhlcvParams struct {
 	Instrument int64
 	Epoch      time.Time
 	Open       string
@@ -166,8 +167,8 @@ type UpdateAgentParams struct {
 	Number     int64
 }
 
-func (q *Queries) UpdateAgent(ctx context.Context, arg UpdateAgentParams) (Ohlcv, error) {
-	row := q.db.QueryRowContext(ctx, updateAgent,
+func (q *Queries) UpdateOhlcv(ctx context.Context, arg UpdateOhlcvParams) (Ohlcv, error) {
+	row := q.db.QueryRowContext(ctx, updateOhlcv,
 		arg.Instrument,
 		arg.Epoch,
 		arg.Open,

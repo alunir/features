@@ -5,7 +5,6 @@ CREATE TABLE IF NOT EXISTS vpin (
 );
 
 CREATE TABLE IF NOT EXISTS vpin_ohlcv (
-    id BIGSERIAL PRIMARY KEY,
     Instrument bigint NOT NULL,
     VPIN bigint NOT NULL,
     Epoch TIMESTAMP NOT NULL,
@@ -17,6 +16,7 @@ CREATE TABLE IF NOT EXISTS vpin_ohlcv (
     BuyVolume NUMERIC,
     SellVolume NUMERIC,
     Number bigint,
+    PRIMARY KEY (Instrument, VPIN, Epoch),
     FOREIGN KEY (Instrument) REFERENCES instrument(id),
     FOREIGN KEY (VPIN) REFERENCES vpin(id)
 );
