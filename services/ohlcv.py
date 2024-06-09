@@ -52,8 +52,7 @@ def msg_to_df(msg: dict) -> pd.DataFrame:
 
 async def send(df: pd.DataFrame, rd: RedisStore, pg: Connection):
     data = OHLCV_from_df(df)
-    await rd.send(data, "ohlcv")
-    # await asyncio.gather(rd.send(data, "ohlcv"), pg.send(data))
+    await asyncio.gather(rd.send(data, "ohlcv"), pg.send(data))
     logging.info("Sent all records to Postgres and SurrealDB")
 
 
