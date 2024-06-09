@@ -126,12 +126,10 @@ async def main():
                 continue
 
             df = pd.DataFrame(ohlcvs)
-            df.index = df["Epoch"]
+            df = df.set_index("Epoch").astype(float)
             df = df.drop(columns=["Volume", "SellVolume"]).rename(
                 columns={"BuyVolume": "Volume"}
             )
-            # change all df values to float
-            df = df.astype(float)
 
             features_df = make_features(df)
 
