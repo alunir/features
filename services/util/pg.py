@@ -5,8 +5,9 @@
 import os
 import logging
 import asyncpg
+from datetime import datetime
 from typing import List
-from .types import OHLCV
+from .types import Data
 from dataclasses import astuple
 
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO").upper())
@@ -58,9 +59,15 @@ class Connection:
 
         logging.info("Connected to Postgres")
 
+    async def get_last_epoch(self, table: str) -> List:
+        async with self.conn.transaction():
+            return await self.conn.fetch(
+                f"SELECT * FROM {table} ORDER BY Epoch DESC LIMIT 1"
+            )
+
     async def send(
         self,
-        data: List[OHLCV],
+        data: List[Data],
     ) -> None:
         """
         Upserts OHLCV data into the Postgres database
@@ -68,3 +75,12 @@ class Connection:
         logging.debug(f"Inserting {len(data)} rows into Postgres")
         async with self.conn.transaction():
             await self.conn.executemany(UPSERT_OHLCV_QUERY, [astuple(d) for d in data])
+
+    async def fetch(self, table: str, last_epoch: datetime) -> List:
+        """
+        Fetches data from the Postgres database
+        """
+        async with self.conn.transaction():
+            return await self.conn.fetch(
+                f"SELECT * FROM {table} WHERE Epoch > $1 ORDER BY Epoch ASC", last_epoch
+            )

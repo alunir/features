@@ -6,7 +6,6 @@
 
 | Name | Type | Default | Nullable | Children | Parents | Comment |
 | ---- | ---- | ------- | -------- | -------- | ------- | ------- |
-| id | bigint | nextval('ohlcv_id_seq'::regclass) | false |  |  |  |
 | instrument | bigint |  | false |  | [public.instrument](public.instrument.md) |  |
 | epoch | timestamp without time zone |  | false |  |  |  |
 | open | numeric |  | false |  |  |  |
@@ -22,14 +21,12 @@
 | ---- | ---- | ---------- |
 | ohlcv_instrument_fkey | FOREIGN KEY | FOREIGN KEY (instrument) REFERENCES instrument(id) |
 | ohlcv_pkey | PRIMARY KEY | PRIMARY KEY (instrument, epoch) |
-| ohlcv_id_key | UNIQUE | UNIQUE (id) |
 
 ## Indexes
 
 | Name | Definition |
 | ---- | ---------- |
 | ohlcv_pkey | CREATE UNIQUE INDEX ohlcv_pkey ON public.ohlcv USING btree (instrument, epoch) |
-| ohlcv_id_key | CREATE UNIQUE INDEX ohlcv_id_key ON public.ohlcv USING btree (id) |
 
 ## Relations
 

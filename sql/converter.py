@@ -1,3 +1,6 @@
+import sys
+import pandas as pd
+
 """
 data.csv
 
@@ -8,10 +11,24 @@ data.csv
 
 """
 
-import pandas as pd
+if len(sys.argv) != 4:
+    print("Usage: python converter.py ohlcv all_df.pkl data.csv")
+    sys.exit(1)
 
-df = pd.DataFrame([1], columns=["Instrument"])
-df = pd.concat([df, pd.read_pickle("all_df.pkl")], axis=1)
+
+mode = sys.argv[1]
+input = sys.argv[2]
+output = sys.argv[3]
+
+if mode == "ohlcv":
+    df = pd.DataFrame([1], columns=["Instrument"])
+else:
+    df = pd.DataFrame([[1, 1]], columns=["Instrument", "VPIN"])
+
+ddf = pd.read_pickle(input)
+if "Epoch" not in ddf.columns:
+    ddf = ddf.reset_index().rename(columns={"index": "Epoch"})
+df = pd.concat([df, ddf], axis=1)
 print(df.columns)
 
 # fillna with 0
@@ -22,16 +39,20 @@ print(df["Number"].isna().sum())
 # show the rows with non-finite values in Number
 print(df[df["Number"].isna()])
 # convert Number to int
-df.Number = df.Number.astype(int)
+if mode == "ohlcv":
+    df.Number = df.Number.astype(int)
+else:
+    df.Number = df.Number.astype(float)
 
 # sort by Epoch
 df.sort_values(by="Epoch", inplace=True)
-df = df.iloc[1:]
-df.index = range(1, len(df) + 1)
+if mode == "ohlcv":
+    df = df.iloc[1:]
 
 # convert Epoch to no timezone
 df["Epoch"] = df["Epoch"].dt.tz_localize(None)
 df["Instrument"] = 1
+if mode != "ohlcv":
+    df["VPIN"] = 1
 
-
-df.to_csv("data.csv", index=True, header=False)
+df.to_csv(output, index=False, header=False)

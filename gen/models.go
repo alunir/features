@@ -15,12 +15,11 @@ type Exchange struct {
 }
 
 type Features202406 struct {
-	ID         sql.NullInt64
 	Instrument int64
 	Vpin       int64
 	Epoch      time.Time
 	Volume     string
-	Number     int64
+	Number     string
 	ImfImf0    sql.NullString
 	ImfImf1    sql.NullString
 	ImfImf2    sql.NullString
@@ -64,7 +63,6 @@ type Instrument struct {
 }
 
 type Ohlcv struct {
-	ID         sql.NullInt64
 	Instrument int64
 	Epoch      time.Time
 	Open       string
@@ -81,7 +79,6 @@ type Vpin struct {
 }
 
 type VpinOhlcv struct {
-	ID         sql.NullInt64
 	Instrument int64
 	Vpin       int64
 	Epoch      time.Time
@@ -92,5 +89,5 @@ type VpinOhlcv struct {
 	Volume     sql.NullString
 	Buyvolume  sql.NullString
 	Sellvolume sql.NullString
-	Number     sql.NullInt64
+	Number     sql.NullString
 }

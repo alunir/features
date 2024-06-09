@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS features_202406 (
     VPIN bigint NOT NULL,
     Epoch TIMESTAMP NOT NULL,
     Volume NUMERIC NOT NULL,
-    Number bigint NOT NULL,
+    Number NUMERIC NOT NULL,
     imf_imf_0 NUMERIC,
     imf_imf_1 NUMERIC,
     imf_imf_2 NUMERIC,

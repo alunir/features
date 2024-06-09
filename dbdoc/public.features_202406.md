@@ -6,12 +6,11 @@
 
 | Name | Type | Default | Nullable | Children | Parents | Comment |
 | ---- | ---- | ------- | -------- | -------- | ------- | ------- |
-| id | bigint | nextval('features_202406_id_seq'::regclass) | false |  |  |  |
 | instrument | bigint |  | false |  | [public.instrument](public.instrument.md) |  |
-| vpin | bigint |  | false |  | [public.vpin](public.vpin.md) |  |
+| vpin | bigint |  | false |  |  |  |
 | epoch | timestamp without time zone |  | false |  |  |  |
 | volume | numeric |  | false |  |  |  |
-| number | bigint |  | false |  |  |  |
+| number | numeric |  | false |  |  |  |
 | imf_imf_0 | numeric |  | true |  |  |  |
 | imf_imf_1 | numeric |  | true |  |  |  |
 | imf_imf_2 | numeric |  | true |  |  |  |
@@ -52,16 +51,13 @@
 | Name | Type | Definition |
 | ---- | ---- | ---------- |
 | features_202406_instrument_fkey | FOREIGN KEY | FOREIGN KEY (instrument) REFERENCES instrument(id) |
-| features_202406_vpin_fkey | FOREIGN KEY | FOREIGN KEY (vpin) REFERENCES vpin(id) |
 | features_202406_pkey | PRIMARY KEY | PRIMARY KEY (instrument, vpin, epoch) |
-| features_202406_id_key | UNIQUE | UNIQUE (id) |
 
 ## Indexes
 
 | Name | Definition |
 | ---- | ---------- |
 | features_202406_pkey | CREATE UNIQUE INDEX features_202406_pkey ON public.features_202406 USING btree (instrument, vpin, epoch) |
-| features_202406_id_key | CREATE UNIQUE INDEX features_202406_id_key ON public.features_202406 USING btree (id) |
 
 ## Relations
 

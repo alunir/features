@@ -6,7 +6,7 @@
 
 | Name | Type | Default | Nullable | Children | Parents | Comment |
 | ---- | ---- | ------- | -------- | -------- | ------- | ------- |
-| id | bigint | nextval('vpin_id_seq'::regclass) | false | [public.vpin_ohlcv](public.vpin_ohlcv.md) [public.features_202406](public.features_202406.md) |  |  |
+| id | bigint | nextval('vpin_id_seq'::regclass) | false | [public.vpin_ohlcv](public.vpin_ohlcv.md) |  |  |
 | threshold | numeric |  | false |  |  |  |
 
 ## Constraints

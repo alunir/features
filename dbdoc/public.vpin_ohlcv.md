@@ -6,7 +6,6 @@
 
 | Name | Type | Default | Nullable | Children | Parents | Comment |
 | ---- | ---- | ------- | -------- | -------- | ------- | ------- |
-| id | bigint | nextval('vpin_ohlcv_id_seq'::regclass) | false |  |  |  |
 | instrument | bigint |  | false |  | [public.instrument](public.instrument.md) |  |
 | vpin | bigint |  | false |  | [public.vpin](public.vpin.md) |  |
 | epoch | timestamp without time zone |  | false |  |  |  |
@@ -17,7 +16,7 @@
 | volume | numeric |  | true |  |  |  |
 | buyvolume | numeric |  | true |  |  |  |
 | sellvolume | numeric |  | true |  |  |  |
-| number | bigint |  | true |  |  |  |
+| number | numeric |  | true |  |  |  |
 
 ## Constraints
 
@@ -26,14 +25,12 @@
 | vpin_ohlcv_instrument_fkey | FOREIGN KEY | FOREIGN KEY (instrument) REFERENCES instrument(id) |
 | vpin_ohlcv_vpin_fkey | FOREIGN KEY | FOREIGN KEY (vpin) REFERENCES vpin(id) |
 | vpin_ohlcv_pkey | PRIMARY KEY | PRIMARY KEY (instrument, vpin, epoch) |
-| vpin_ohlcv_id_key | UNIQUE | UNIQUE (id) |
 
 ## Indexes
 
 | Name | Definition |
 | ---- | ---------- |
 | vpin_ohlcv_pkey | CREATE UNIQUE INDEX vpin_ohlcv_pkey ON public.vpin_ohlcv USING btree (instrument, vpin, epoch) |
-| vpin_ohlcv_id_key | CREATE UNIQUE INDEX vpin_ohlcv_id_key ON public.vpin_ohlcv USING btree (id) |
 
 ## Relations
 

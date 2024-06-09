@@ -20,5 +20,5 @@ RETURNING *;
 
 -- name: DelettOhlcv :one
 DELETE FROM ohlcv
-WHERE id = $1
+WHERE instrument = $1 AND epoch = $2
 RETURNING *;

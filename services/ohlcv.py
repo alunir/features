@@ -9,7 +9,7 @@ import pandas as pd
 from typing import List
 from util.types import OHLCV
 from util.pg import Connection
-from util.sd import SurrealDBStore
+from util.rd import RedisStore
 import pymarketstore as pymkts
 
 
@@ -50,16 +50,17 @@ def msg_to_df(msg: dict) -> pd.DataFrame:
     return df
 
 
-async def send(df: pd.DataFrame, store: SurrealDBStore, pg: Connection):
+async def send(df: pd.DataFrame, rd: RedisStore, pg: Connection):
     data = OHLCV_from_df(df)
-    await asyncio.gather(store.send(data), pg.send(data))
+    await rd.send(data, "ohlcv")
+    # await asyncio.gather(rd.send(data, "ohlcv"), pg.send(data))
     logging.info("Sent all records to Postgres and SurrealDB")
 
 
 async def main():
     # Wait for surrealdb start
-    store = SurrealDBStore()
-    await store.connection_test()
+    rd = RedisStore()
+    await rd.connection_test()
 
     pg = Connection()
     await pg.connection_test()
@@ -83,7 +84,7 @@ async def main():
             df = reply.first().df()
             logging.info(f"Got {len(df)} rows")
 
-            await send(df, store, pg)
+            await send(df, rd, pg)
 
             pat = re.compile(r"^Binance_ETH-USDT/*")
             while True:
@@ -110,7 +111,7 @@ async def main():
                             data = msg["data"]
                             logging.debug(f"Received message: {data}")
                             df = msg_to_df(data)
-                            await send(df, store, pg)
+                            await send(df, rd, pg)
 
         except KeyboardInterrupt:
             return

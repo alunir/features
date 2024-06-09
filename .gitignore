@@ -9,8 +9,11 @@ bkp
 serviceaccount.json
 
 
-all_df.pkl
-data.csv
+sql/*.pkl
+sql/*.csv
 
 data
 logs
+
+
+redis.conf

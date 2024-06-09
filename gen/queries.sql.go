@@ -7,14 +7,13 @@ package sqlc
 
 import (
 	"context"
-	"database/sql"
 	"time"
 )
 
 const createOhlcv = `-- name: CreateOhlcv :one
 INSERT INTO ohlcv (Instrument, Epoch, Open, High, Low, Close, Volume, Number)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-RETURNING id, instrument, epoch, open, high, low, close, volume, number
+RETURNING instrument, epoch, open, high, low, close, volume, number
 `
 
 type CreateOhlcvParams struct {
@@ -41,7 +40,6 @@ func (q *Queries) CreateOhlcv(ctx context.Context, arg CreateOhlcvParams) (Ohlcv
 	)
 	var i Ohlcv
 	err := row.Scan(
-		&i.ID,
 		&i.Instrument,
 		&i.Epoch,
 		&i.Open,
@@ -56,15 +54,19 @@ func (q *Queries) CreateOhlcv(ctx context.Context, arg CreateOhlcvParams) (Ohlcv
 
 const delettOhlcv = `-- name: DelettOhlcv :one
 DELETE FROM ohlcv
-WHERE id = $1
-RETURNING id, instrument, epoch, open, high, low, close, volume, number
+WHERE instrument = $1 AND epoch = $2
+RETURNING instrument, epoch, open, high, low, close, volume, number
 `
 
-func (q *Queries) DelettOhlcv(ctx context.Context, id sql.NullInt64) (Ohlcv, error) {
-	row := q.db.QueryRowContext(ctx, delettOhlcv, id)
+type DelettOhlcvParams struct {
+	Instrument int64
+	Epoch      time.Time
+}
+
+func (q *Queries) DelettOhlcv(ctx context.Context, arg DelettOhlcvParams) (Ohlcv, error) {
+	row := q.db.QueryRowContext(ctx, delettOhlcv, arg.Instrument, arg.Epoch)
 	var i Ohlcv
 	err := row.Scan(
-		&i.ID,
 		&i.Instrument,
 		&i.Epoch,
 		&i.Open,
@@ -105,7 +107,7 @@ func (q *Queries) ListExchanges(ctx context.Context) ([]Exchange, error) {
 }
 
 const listOhlcv = `-- name: ListOhlcv :many
-SELECT id, instrument, epoch, open, high, low, close, volume, number FROM ohlcv
+SELECT instrument, epoch, open, high, low, close, volume, number FROM ohlcv
 WHERE Instrument = $1
 ORDER BY Epoch DESC
 LIMIT $2
@@ -126,7 +128,6 @@ func (q *Queries) ListOhlcv(ctx context.Context, arg ListOhlcvParams) ([]Ohlcv, 
 	for rows.Next() {
 		var i Ohlcv
 		if err := rows.Scan(
-			&i.ID,
 			&i.Instrument,
 			&i.Epoch,
 			&i.Open,
@@ -153,7 +154,7 @@ const updateOhlcv = `-- name: UpdateOhlcv :one
 UPDATE ohlcv
 SET Open = $3, High = $4, Low = $5, Close = $6, Volume = $7, Number = $8
 WHERE Instrument = $1 AND Epoch = $2
-RETURNING id, instrument, epoch, open, high, low, close, volume, number
+RETURNING instrument, epoch, open, high, low, close, volume, number
 `
 
 type UpdateOhlcvParams struct {
@@ -180,7 +181,6 @@ func (q *Queries) UpdateOhlcv(ctx context.Context, arg UpdateOhlcvParams) (Ohlcv
 	)
 	var i Ohlcv
 	err := row.Scan(
-		&i.ID,
 		&i.Instrument,
 		&i.Epoch,
 		&i.Open,

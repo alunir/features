@@ -8,5 +8,7 @@ msgpack
 dataclasses
 pymarketstore
 websockets
-surrealdb
 asyncpg
+redis
+# surrealdb
+# surrealist

@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS vpin_ohlcv (
     Volume NUMERIC,
     BuyVolume NUMERIC,
     SellVolume NUMERIC,
-    Number bigint,
+    Number NUMERIC,
     PRIMARY KEY (Instrument, VPIN, Epoch),
     FOREIGN KEY (Instrument) REFERENCES instrument(id),
     FOREIGN KEY (VPIN) REFERENCES vpin(id)
