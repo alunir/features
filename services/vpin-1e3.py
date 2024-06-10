@@ -86,14 +86,17 @@ async def main():
 
                 # fetch ohlcv from postgres again
                 ohlcvs = await fetch_ohlcv(pg)
-                if len(ohlcvs) == 0:
-                    continue
 
                 df = pd.DataFrame(ohlcvs)
                 df.index = df["Epoch"]
 
+                log1p_df = np.log1p(df[df.columns[df.columns != "Epoch"]].astype(float))
+
+                if log1p_df.empty:
+                    continue
+
                 imb_df = compute_imbalance_bars(
-                    np.log1p(df[df.columns[df.columns != "Epoch"]].astype(float)),
+                    log1p_df,
                     bucket_size=1000,
                 )
 
