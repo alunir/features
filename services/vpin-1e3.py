@@ -77,9 +77,10 @@ async def main():
 
             ohlcv = json.loads(message["data"])
             epoch = datetime.strptime(ohlcv["Epoch"], "%Y-%m-%dT%H:%M:%SZ")
-            two_min_ago = datetime.now() - timedelta(minutes=2)
-            one_min_ago = datetime.now() - timedelta(minutes=1)
-            if two_min_ago < epoch and epoch < one_min_ago:
+            now = datetime.now().replace(second=0, microsecond=0)
+            two_min_ago = now - timedelta(minutes=2)
+            one_min_ago = now - timedelta(minutes=1)
+            if two_min_ago <= epoch and epoch < one_min_ago:
                 # Just use as trigger
                 logging.debug(f"Received OHLCV: {ohlcv}")
 
