@@ -2,7 +2,7 @@ pandas
 pyarrow
 python-multipart
 emd
-git+https://${GITHUB_TOKEN}@github.com/alunir/mlfinlab.git@1.0.4
+git+https://${GITHUB_TOKEN}@github.com/alunir/mlfinlab.git@1.0.5
 scikit-learn==1.5.0
 msgpack
 dataclasses
@@ -10,5 +10,3 @@ pymarketstore
 websockets
 asyncpg
 redis
-# surrealdb
-# surrealist

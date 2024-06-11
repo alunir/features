@@ -92,13 +92,14 @@ async def main():
 
                 log1p_df = np.log1p(df[df.columns[df.columns != "Epoch"]].astype(float))
 
-                if log1p_df.empty:
-                    continue
-
                 imb_df = compute_imbalance_bars(
                     log1p_df,
                     bucket_size=1000,
                 )
+
+                # compute_imbalance_bars returns an empty DataFrame if the input DataFrame is small
+                if imb_df.empty:
+                    continue
 
                 logging.debug(f"imb_df: {len(imb_df)} rows")
 
