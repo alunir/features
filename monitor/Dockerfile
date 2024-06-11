@@ -6,6 +6,6 @@ WORKDIR /app
 RUN pip install aiodocker aiohttp
 
 # スクリプトをコピー
-COPY monitor.py /app
+COPY main.py /app
 
-CMD ["python", "/app/monitor.py"]
+CMD ["python", "/app/main.py"]
