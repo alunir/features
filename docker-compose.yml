@@ -59,11 +59,10 @@ services:
       - ./redis.conf:/etc/redis/redis.conf
     restart: on-failure
 
-  # redis-commander:
-  #   image: ghcr.io/joeferner/redis-commander:latest
-  #   ports:
-  #     - "8880:8081"
-  #   env_file:
-  #     - .env
-  #   depends_on:
-  #     - redis
+  monitor:
+    build:
+      context: ./monitor
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    env_file:
+      - .env
