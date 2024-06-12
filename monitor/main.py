@@ -1,6 +1,7 @@
 import os
 import asyncio
-import aiodocker
+from json import dumps
+from aiodocker import Docker
 import aiohttp
 
 webhook_url = os.environ.get("SLACK_URL")
@@ -13,27 +14,27 @@ async def send_slack_message(message):
             print("Message sent to Slack:", await resp.text())
 
 
-async def monitor_docker_events():
-    docker = aiodocker.Docker()
-    events = docker.events.subscribe()
-
-    try:
-        async with events as stream:
-            async for event in stream:
-                if event["Action"] == "die" and event["Type"] == "container":
-                    container_id = event["Actor"]["ID"]
-                    container = await docker.containers.get(container_id)
-                    container_name = (
-                        container._container["Names"][0]
-                        if container._container.get("Names")
-                        else "unknown"
-                    )
-                    message = f"Container {container_name} ({container_id}) has failed."
-                    await send_slack_message(message)
-    finally:
-        await docker.close()
+async def async_loop(loop, docker):
+    loop.create_task(
+        docker.events.run(
+            filters=dumps(
+                {
+                    "type": ["container"],
+                    "event": ["die"],  # 監視するイベントを`start`から`die`に変更
+                }
+            )
+        )
+    )
+    s = docker.events.subscribe(create_task=False)
+    while True:
+        event = await s.get()
+        container_id = event["Actor"]["ID"]
+        container_name = event["Actor"]["Attributes"].get("name", "unknown")
+        message = f"Container {container_name} ({container_id}) has failed."
+        await send_slack_message(message)
 
 
 if __name__ == "__main__":
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(monitor_docker_events())
+    docker = Docker()
+    loop.run_until_complete(async_loop(loop, docker))
