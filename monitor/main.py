@@ -2,16 +2,10 @@ import os
 import asyncio
 from json import dumps
 from aiodocker import Docker
-import aiohttp
-
-webhook_url = os.environ.get("SLACK_URL")
+import slackweb
 
 
-async def send_slack_message(message):
-    async with aiohttp.ClientSession() as session:
-        payload = {"text": message}
-        async with session.post(webhook_url, json=payload) as resp:
-            print("Message sent to Slack:", await resp.text())
+slack = slackweb.Slack(url=os.environ.get("SLACK_URL"))
 
 
 async def async_loop(loop, docker):
@@ -31,7 +25,7 @@ async def async_loop(loop, docker):
         container_id = event["Actor"]["ID"]
         container_name = event["Actor"]["Attributes"].get("name", "unknown")
         message = f"Container {container_name} ({container_id}) has failed."
-        await send_slack_message(message)
+        slack.notify(text=message)
 
 
 if __name__ == "__main__":
