@@ -155,13 +155,14 @@ async def main():
 
             df = pd.DataFrame(ohlcvs)
             df = df.set_index("Epoch").astype(float)
+            df.sort_index(inplace=True)
             df = df.drop(columns=["Volume", "SellVolume"]).rename(
                 columns={"BuyVolume": "Volume"}
             )
 
             features_df = make_features(df)
 
-            logging.debug(f"features_df: {len(features_df)} rows")
+            logging.info(f"features_df: {len(features_df)} rows")
 
             if len(features_df) < 2:
                 continue
