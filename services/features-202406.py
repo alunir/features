@@ -170,7 +170,7 @@ async def main():
 
             # write postgres
             await asyncio.gather(
-                rd.send(data, "features_202406"), pg.send(data, "features_202406")
+                rd.send(data[-1], "features_202406"), pg.send(data, "features_202406")
             )
 
             logging.info("Sent all records to Postgres and Redis")
