@@ -35,7 +35,43 @@ UPSERT_FEATURES_202406_QUERY = """
 INSERT INTO features_202406 (Instrument, VPIN, Epoch, Volume, Number, imf_imf_0, imf_imf_1, imf_imf_2, imf_imf_3, imf_imf_4, imf_imf_5, imf_imf_6, imf_imf_7, imf_imf_8, imf_ia_0, imf_ia_1, imf_ia_2, imf_ia_3, imf_ia_4, imf_ia_5, imf_ia_6, imf_ia_7, imf_ia_8, imf_ip_0, imf_ip_1, imf_ip_2, imf_ip_3, imf_ip_4, imf_ip_5, imf_ip_6, imf_ip_7, imf_ip_8, Open, High, Low, Close, Ask, Bid, Last)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39)
 ON CONFLICT (Instrument, VPIN, Epoch)
-DO NOTHING;
+UPDATE SET
+Volume = EXCLUDED.Volume,
+Number = EXCLUDED.Number,
+imf_imf_0 = EXCLUDED.imf_imf_0,
+imf_imf_1 = EXCLUDED.imf_imf_1,
+imf_imf_2 = EXCLUDED.imf_imf_2,
+imf_imf_3 = EXCLUDED.imf_imf_3,
+imf_imf_4 = EXCLUDED.imf_imf_4,
+imf_imf_5 = EXCLUDED.imf_imf_5,
+imf_imf_6 = EXCLUDED.imf_imf_6,
+imf_imf_7 = EXCLUDED.imf_imf_7,
+imf_imf_8 = EXCLUDED.imf_imf_8,
+imf_ia_0 = EXCLUDED.imf_ia_0,
+imf_ia_1 = EXCLUDED.imf_ia_1,
+imf_ia_2 = EXCLUDED.imf_ia_2,
+imf_ia_3 = EXCLUDED.imf_ia_3,
+imf_ia_4 = EXCLUDED.imf_ia_4,
+imf_ia_5 = EXCLUDED.imf_ia_5,
+imf_ia_6 = EXCLUDED.imf_ia_6,
+imf_ia_7 = EXCLUDED.imf_ia_7,
+imf_ia_8 = EXCLUDED.imf_ia_8,
+imf_ip_0 = EXCLUDED.imf_ip_0,
+imf_ip_1 = EXCLUDED.imf_ip_1,
+imf_ip_2 = EXCLUDED.imf_ip_2,
+imf_ip_3 = EXCLUDED.imf_ip_3,
+imf_ip_4 = EXCLUDED.imf_ip_4,
+imf_ip_5 = EXCLUDED.imf_ip_5,
+imf_ip_6 = EXCLUDED.imf_ip_6,
+imf_ip_7 = EXCLUDED.imf_ip_7,
+imf_ip_8 = EXCLUDED.imf_ip_8,
+Open = EXCLUDED.Open,
+High = EXCLUDED.High,
+Low = EXCLUDED.Low,
+Close = EXCLUDED.Close,
+Ask = EXCLUDED.Ask,
+Bid = EXCLUDED.Bid,
+Last = EXCLUDED.Last;
 """
 
 
