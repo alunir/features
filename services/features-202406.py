@@ -1,6 +1,5 @@
 import os
 import emd
-import json
 import logging
 import asyncio
 import numpy as np
@@ -98,9 +97,9 @@ def Features202406_from_df(df: pd.DataFrame) -> List[Features202406]:
             row.high,
             row.low,
             row.close,
-            row.Last,
             row.Ask,
             row.Bid,
+            row.Last,
         )
         v += [d]
     return v
@@ -175,6 +174,8 @@ async def main():
             )
 
             logging.info("Sent all records to Postgres and Redis")
+
+            del df, data, ohlcvs
 
     while True:
         try:
