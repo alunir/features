@@ -12,7 +12,10 @@ from util.pg import Connection
 from util.rd import RedisStore
 from mlfinlab.bars.dollar_imbalance_bars import compute_imbalance_bars
 
-logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO").upper())
+logging.basicConfig(
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    level=os.getenv("LOG_LEVEL", "INFO").upper(),
+)
 
 
 def VpinOHLCV_from_df(df: pd.DataFrame) -> List[VpinOHLCV]:
