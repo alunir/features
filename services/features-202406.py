@@ -15,6 +15,8 @@ from mlfinlab.features.fracdiff import frac_diff_ffd
 
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO").upper())
 
+np.random.seed(42)
+
 
 def make_features(data: pd.DataFrame, max_imf=8):
     prices = np.expm1(data.Close.rename("Last"))
@@ -31,7 +33,10 @@ def make_features(data: pd.DataFrame, max_imf=8):
     ## IMFs
     ###########
 
-    imfs = emd.sift.sift(data.Close.values, max_imfs=max_imf)
+    imfs = emd.sift.sift(
+        data.Close.values,
+        max_imfs=max_imf,
+    )
     imfnum = imfs.shape[1]
 
     sample_rate = 1024
@@ -163,14 +168,16 @@ async def main():
 
             logging.info(f"features_df: {len(features_df)} rows")
 
-            if len(features_df) < 2:
-                continue
+            # if len(features_df) < 2:
+            #     continue
 
             data = Features202406_from_df(features_df)
+            latest_features_for_algo = [data[-1]]
 
             # write postgres
             await asyncio.gather(
-                rd.send([data[-1]], "features_202406"), pg.send(data, "features_202406")
+                rd.send(latest_features_for_algo, "features_202406"),
+                pg.send(data, "features_202406"),
             )
 
             logging.info("Sent all records to Postgres and Redis")
