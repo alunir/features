@@ -83,9 +83,9 @@ async def main():
                 second=0, microsecond=0
             )
             now = datetime.now().replace(second=0, microsecond=0)
-            two_min_ago = now - timedelta(minutes=2)
+            # two_min_ago = now - timedelta(minutes=2)
             one_min_ago = now - timedelta(minutes=1)
-            if two_min_ago < epoch and epoch <= one_min_ago:
+            if epoch == one_min_ago:
                 # Just use as trigger
                 logging.debug(f"Received OHLCV: {ohlcv}")
 
@@ -107,9 +107,6 @@ async def main():
                     continue
 
                 logging.debug(f"imb_df: {len(imb_df)} rows")
-
-                if len(imb_df) < 2:
-                    continue
 
                 data = VpinOHLCV_from_df(imb_df)
 
