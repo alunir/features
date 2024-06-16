@@ -133,7 +133,7 @@ class Connection:
                 f"SELECT * FROM {target} WHERE Epoch > (SELECT Epoch FROM {source} ORDER BY Epoch DESC LIMIT 1) ORDER BY Epoch ASC"
             )
 
-    async def fetch_all(self, target: str, limit: int = 10000) -> List:
+    async def fetch_all_with_limit(self, target: str, limit: int = 10000) -> List:
         """
         Fetches data from the Postgres database
         """
@@ -141,3 +141,10 @@ class Connection:
             return await self.conn.fetch(
                 f"SELECT * FROM {target} ORDER BY Epoch ASC LIMIT {limit}"
             )
+
+    async def fetch_all(self, target: str) -> List:
+        """
+        Fetches data from the Postgres database
+        """
+        async with self.conn.transaction():
+            return await self.conn.fetch(f"SELECT * FROM {target} ORDER BY Epoch ASC")
