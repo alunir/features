@@ -110,8 +110,8 @@ def Features202406_from_df(df: pd.DataFrame) -> List[Features202406]:
     return v
 
 
-async def fetch_vpin_ohlcv(pg: Connection) -> List[VpinOHLCV]:
-    ohlcvs = await pg.fetch_all("vpin_ohlcv")
+async def fetch_vpin_ohlcv(pg: Connection, limit: int) -> List[VpinOHLCV]:
+    ohlcvs = await pg.fetch_all("vpin_ohlcv", limit=limit)
     return [
         VpinOHLCV(
             ohlcv["instrument"],
@@ -137,7 +137,7 @@ async def main():
     pg = Connection()
     await pg.connection_test()
 
-    ohlcvs = await fetch_vpin_ohlcv(pg)
+    ohlcvs = await fetch_vpin_ohlcv(pg, 10000)
 
     logging.info(f"vpin_ohlcvs: {len(ohlcvs)} rows")
     logging.info("Start subscribing to Redis PubSub channel...")
@@ -153,7 +153,7 @@ async def main():
             logging.debug(f"Message: {message}")
 
             # fetch vpin_ohlcv from postgres again
-            ohlcvs = await fetch_vpin_ohlcv(pg)
+            ohlcvs = await fetch_vpin_ohlcv(pg, 10000)
             if len(ohlcvs) == 0:
                 continue
 
