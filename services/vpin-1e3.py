@@ -92,6 +92,10 @@ async def main():
                 # fetch ohlcv from postgres again
                 ohlcvs = await fetch_ohlcv(pg)
 
+                if len(ohlcvs) == 0:
+                    logging.warning("No OHLCV data in Postgres")
+                    continue
+
                 df = pd.DataFrame(ohlcvs)
                 df.index = df["Epoch"]
 
