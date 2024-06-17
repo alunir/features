@@ -182,7 +182,7 @@ async def main():
                 pg.send(data, "features_202406"),
             )
 
-            logging.info("Sent all records to Postgres and Redis")
+            logging.info(f"Sent all records to Postgres and lag {lag} records to Redis")
 
             del df, data, ohlcvs
 
