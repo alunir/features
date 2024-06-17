@@ -144,6 +144,7 @@ async def main():
     logging.info("Start subscribing to Redis PubSub channel...")
 
     channel = "vpin_ohlcv"
+    lag = 32
 
     async def reader(channel: redis.client.PubSub):
         while True:
@@ -173,7 +174,7 @@ async def main():
             #     continue
 
             data = Features202406_from_df(features_df)
-            latest_features_for_algo = [data[-1]]
+            latest_features_for_algo = data[-lag:]
 
             # write postgres
             await asyncio.gather(
