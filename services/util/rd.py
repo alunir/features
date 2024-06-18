@@ -45,6 +45,24 @@ class RedisStore:
             )
             return False
 
+    async def send_bulk(self, data: List, channel: str) -> None:
+        """Publish data as bulk to Redis PubSub channel
+
+        Args:
+            data (List): data
+            db (int): Redis database number
+        """
+        try:
+            bulk = convert_data(data)
+            await self.r.publish(channel, json.dumps(bulk))
+            logging.info(
+                f"Data published to Redis PubSub channel {channel} successfully."
+            )
+        except redis.ConnectionError as e:
+            logging.error(
+                f"Failed to publish data to Redis PubSub channel {channel}. Error: {e}"
+            )
+
     async def send(self, data: List, channel: str) -> None:
         """Publish data to Redis PubSub channel
 

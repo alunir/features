@@ -178,7 +178,7 @@ async def main():
 
             # write postgres
             await asyncio.gather(
-                rd.send(latest_features_for_algo, "features_202406"),
+                rd.send_bulk(latest_features_for_algo, "features_202406"),
                 pg.send(data, "features_202406"),
             )
 
