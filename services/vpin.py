@@ -50,11 +50,11 @@ def VpinOHLCV_from_df(df: pd.DataFrame) -> List[VpinOHLCV]:
     return v
 
 
-async def fetch_ohlcv(pg: Connection, updated_data_only: bool = True) -> List[OHLCV]:
-    if updated_data_only:
-        ohlcvs = await pg.fetch("ohlcv", "vpin_ohlcv")
-    else:
+async def fetch_ohlcv(pg: Connection, fetch_all_data: bool = False) -> List[OHLCV]:
+    if fetch_all_data:
         ohlcvs = await pg.fetch_all("ohlcv")
+    else:
+        ohlcvs = await pg.fetch("ohlcv", "vpin_ohlcv")
     return [
         OHLCV(
             ohlcv["instrument"],
@@ -77,8 +77,7 @@ async def main():
     output = os.environ.get("OUTPUT")
     assert output, "OUTPUT is not set"
 
-    updated_data_only = ast.literal_eval(os.environ.get("UPDATED_DATA_ONLY"))
-    assert updated_data_only, "UPDATED_DATA_ONLY is not set"
+    fetch_all_data = ast.literal_eval(os.environ.get("FETCH_ALL_DATA", "False"))
 
     rd = RedisStore()
     await rd.connection_test()
@@ -86,7 +85,7 @@ async def main():
     pg = Connection()
     await pg.connection_test()
 
-    ohlcvs = await fetch_ohlcv(pg, updated_data_only=updated_data_only)
+    ohlcvs = await fetch_ohlcv(pg, fetch_all_data=fetch_all_data)
 
     logger.info(f"ohlcvs: {len(ohlcvs)} rows")
     logger.info("Start subscribing to Redis PubSub channel...")
