@@ -27,6 +27,8 @@ assert instrument_id, "INSTRUMENT_ID is not set"
 vpin_id = int(os.environ.get("VPIN_ID"))
 assert vpin_id, "VPIN_ID is not set"
 
+redis_suffix = f"_{instrument_id}_{vpin_id}"
+
 
 def VpinOHLCV_from_df(df: pd.DataFrame) -> List[VpinOHLCV]:
     if "Epoch" not in df.columns:
@@ -138,7 +140,7 @@ async def main():
 
                 # write postgres
                 await asyncio.gather(
-                    rd.send(data, f"{output}_{instrument_id}_{vpin_id}"),
+                    rd.send(data, {output} + redis_suffix),
                     pg.send(data, output),
                 )
 

@@ -29,6 +29,8 @@ assert instrument_id, "INSTRUMENT_ID is not set"
 vpin_id = int(os.environ.get("VPIN_ID"))
 assert vpin_id, "VPIN_ID is not set"
 
+redis_suffix = f"_{instrument_id}_{vpin_id}"
+
 
 def make_features(data: pd.DataFrame, max_imf=8):
     prices = np.expm1(data.Close.rename("Last"))
@@ -196,7 +198,7 @@ async def main():
 
             # write postgres
             await asyncio.gather(
-                rd.send_bulk(latest_features_for_algo, output),
+                rd.send_bulk(latest_features_for_algo, output + redis_suffix),
                 pg.send(data, output),
             )
 
@@ -207,7 +209,7 @@ async def main():
     while True:
         try:
             async with rd.r.pubsub() as pubsub:
-                await pubsub.subscribe(f"{source}_{instrument_id}_{vpin_id}")
+                await pubsub.subscribe(source + redis_suffix)
                 await reader(pubsub)
         except redis.ConnectionError as e:
             logger.error(
