@@ -140,7 +140,7 @@ async def main():
 
                 # write postgres
                 await asyncio.gather(
-                    rd.send(data, {output} + redis_suffix),
+                    rd.send(data, output + redis_suffix),
                     pg.send(data, output),
                 )
 
