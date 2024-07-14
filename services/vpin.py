@@ -1,6 +1,5 @@
 import os
 import json
-import logging
 import asyncio
 import numpy as np
 import pandas as pd
@@ -11,11 +10,16 @@ from util.types import VpinOHLCV, OHLCV
 from util.pg import Connection
 from util.rd import RedisStore
 from mlfinlab.bars.dollar_imbalance_bars import compute_imbalance_bars
+from logging import getLogger, StreamHandler, Formatter
 
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    level=os.getenv("LOG_LEVEL", "INFO").upper(),
-)
+
+logger = getLogger(__name__)
+stream_handler = StreamHandler()
+formatter = Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+stream_handler.setFormatter(formatter)
+logger.addHandler(stream_handler)
+logger.setLevel(os.getenv("LOG_LEVEL", "INFO").upper())
+
 
 instrument_id = int(os.environ.get("INSTRUMENT_ID"))
 assert instrument_id, "INSTRUMENT_ID is not set"
@@ -77,8 +81,8 @@ async def main():
 
     ohlcvs = await fetch_ohlcv(pg)
 
-    logging.info(f"ohlcvs: {len(ohlcvs)} rows")
-    logging.info("Start subscribing to Redis PubSub channel...")
+    logger.info(f"ohlcvs: {len(ohlcvs)} rows")
+    logger.info("Start subscribing to Redis PubSub channel...")
 
     source = "ohlcv"
 
@@ -87,7 +91,7 @@ async def main():
             message = await channel.get_message(ignore_subscribe_messages=True)
             if message is None:
                 continue
-            logging.debug(f"Message: {message}")
+            logger.debug(f"Message: {message}")
 
             ohlcv = json.loads(message["data"])
             epoch = datetime.strptime(ohlcv["Epoch"], "%Y-%m-%dT%H:%M:%SZ").replace(
@@ -98,13 +102,13 @@ async def main():
             one_min_ago = now - timedelta(minutes=1)
             if epoch == one_min_ago:
                 # Just use as trigger
-                logging.debug(f"Received OHLCV: {ohlcv}")
+                logger.debug(f"Received OHLCV: {ohlcv}")
 
                 # fetch ohlcv from postgres again
                 ohlcvs = await fetch_ohlcv(pg)
 
                 if len(ohlcvs) == 0:
-                    logging.warning("No OHLCV data in Postgres")
+                    logger.warning("No OHLCV data in Postgres")
                     continue
 
                 df = pd.DataFrame(ohlcvs)
@@ -121,7 +125,7 @@ async def main():
                 if imb_df.empty:
                     continue
 
-                logging.debug(f"imb_df: {len(imb_df)} rows")
+                logger.debug(f"imb_df: {len(imb_df)} rows")
 
                 data = VpinOHLCV_from_df(imb_df)
 
@@ -131,7 +135,7 @@ async def main():
                     pg.send(data, output),
                 )
 
-                logging.info("Sent all records to Postgres and Redis")
+                logger.info("Sent all records to Postgres and Redis")
 
     while True:
         try:
@@ -139,7 +143,7 @@ async def main():
                 await pubsub.subscribe(source)
                 await reader(pubsub)
         except redis.ConnectionError as e:
-            logging.error(
+            logger.error(
                 f"Failed to subscribe to Redis PubSub channel {source}. Error: {e}"
             )
             asyncio.sleep(30)

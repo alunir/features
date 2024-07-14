@@ -1,7 +1,6 @@
 import os
 import re
 import traceback
-import logging
 import msgpack
 import asyncio
 import websockets
@@ -11,9 +10,15 @@ from util.types import OHLCV
 from util.pg import Connection
 from util.rd import RedisStore
 import pymarketstore as pymkts
+from logging import getLogger, StreamHandler, Formatter
 
 
-logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO").upper())
+logger = getLogger(__name__)
+stream_handler = StreamHandler()
+formatter = Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+stream_handler.setFormatter(formatter)
+logger.addHandler(stream_handler)
+logger.setLevel(os.getenv("LOG_LEVEL", "INFO").upper())
 
 
 def OHLCV_from_df(df: pd.DataFrame) -> List[OHLCV]:
@@ -53,7 +58,7 @@ def msg_to_df(msg: dict) -> pd.DataFrame:
 async def send(df: pd.DataFrame, rd: RedisStore, pg: Connection):
     data = OHLCV_from_df(df)
     await asyncio.gather(rd.send(data, "ohlcv"), pg.send(data, "ohlcv"))
-    logging.info("Sent all records to Postgres and Redis")
+    logger.info("Sent all records to Postgres and Redis")
 
 
 async def main():
@@ -72,7 +77,7 @@ async def main():
     ping_interval = os.environ.get("PING_INTERVAL", 120)
     ping_timeout = os.environ.get("PING_TIMEOUT", None)
 
-    logging.info("Connected to marketstore")
+    logger.info("Connected to marketstore")
 
     while True:
         try:
@@ -81,7 +86,7 @@ async def main():
             )
             reply = client.query(param)
             df = reply.first().df()
-            logging.info(f"Got {len(df)} rows")
+            logger.info(f"Got {len(df)} rows")
 
             await send(df, rd, pg)
 
@@ -101,22 +106,22 @@ async def main():
 
                     await ws.send(msg)
 
-                    logging.info("Subscribed to Binance_ETH-USDT")
+                    logger.info("Subscribed to Binance_ETH-USDT")
 
                     async for message in ws:
                         msg = msgpack.loads(message)
                         key = msg.get("key")
                         if key is not None and pat.match(key):
                             data = msg["data"]
-                            logging.debug(f"Received message: {data}")
+                            logger.debug(f"Received message: {data}")
                             df = msg_to_df(data)
                             await send(df, rd, pg)
 
         except KeyboardInterrupt:
             return
         except Exception as e:
-            logging.warning(traceback.format_exc())
-            logging.warning(e)
+            logger.warning(traceback.format_exc())
+            logger.warning(e)
         await asyncio.sleep(5)
 
 

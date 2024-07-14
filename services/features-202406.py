@@ -1,6 +1,5 @@
 import os
 import emd
-import logging
 import asyncio
 import numpy as np
 import pandas as pd
@@ -11,9 +10,16 @@ from util.pg import Connection
 from util.rd import RedisStore
 
 from mlfinlab.features.fracdiff import frac_diff_ffd
+from logging import getLogger, StreamHandler, Formatter
 
 
-logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO").upper())
+logger = getLogger(__name__)
+stream_handler = StreamHandler()
+formatter = Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+stream_handler.setFormatter(formatter)
+logger.addHandler(stream_handler)
+logger.setLevel(os.getenv("LOG_LEVEL", "INFO").upper())
+
 
 np.random.seed(42)
 
@@ -36,7 +42,7 @@ def make_features(data: pd.DataFrame, max_imf=8):
     )
 
     ###########
-    ## IMFs
+    # IMFs
     ###########
 
     imfs = emd.sift.sift(
@@ -155,8 +161,8 @@ async def main():
 
     ohlcvs = await fetch_vpin_ohlcv(pg, source)
 
-    logging.info(f"vpin_ohlcvs: {len(ohlcvs)} rows")
-    logging.info("Start subscribing to Redis PubSub channel...")
+    logger.info(f"vpin_ohlcvs: {len(ohlcvs)} rows")
+    logger.info("Start subscribing to Redis PubSub channel...")
 
     async def reader(channel: redis.client.PubSub):
         while True:
@@ -164,7 +170,7 @@ async def main():
             if message is None:
                 continue
             # Just use as trigger
-            logging.debug(f"Message: {message}")
+            logger.debug(f"Message: {message}")
 
             # fetch vpin_ohlcv from postgres again
             ohlcvs = await fetch_vpin_ohlcv(pg, source)
@@ -180,7 +186,7 @@ async def main():
 
             features_df = make_features(df)
 
-            logging.info(f"features_df: {len(features_df)} rows")
+            logger.info(f"features_df: {len(features_df)} rows")
 
             # if len(features_df) < 2:
             #     continue
@@ -194,7 +200,7 @@ async def main():
                 pg.send(data, output),
             )
 
-            logging.info(f"Sent all records to Postgres and lag {lag} records to Redis")
+            logger.info(f"Sent all records to Postgres and lag {lag} records to Redis")
 
             del df, data, ohlcvs
 
@@ -204,7 +210,7 @@ async def main():
                 await pubsub.subscribe(f"{source}_{instrument_id}_{vpin_id}")
                 await reader(pubsub)
         except redis.ConnectionError as e:
-            logging.error(
+            logger.error(
                 f"Failed to subscribe to Redis PubSub channel {source}. Error: {e}"
             )
             asyncio.sleep(30)
