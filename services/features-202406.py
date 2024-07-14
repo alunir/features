@@ -201,7 +201,7 @@ async def main():
     while True:
         try:
             async with rd.r.pubsub() as pubsub:
-                await pubsub.subscribe(source)
+                await pubsub.subscribe(f"{source}_{instrument_id}_{vpin_id}")
                 await reader(pubsub)
         except redis.ConnectionError as e:
             logging.error(

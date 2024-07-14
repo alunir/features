@@ -126,7 +126,10 @@ async def main():
                 data = VpinOHLCV_from_df(imb_df)
 
                 # write postgres
-                await asyncio.gather(rd.send(data, output), pg.send(data, output))
+                await asyncio.gather(
+                    rd.send(data, f"{output}_{instrument_id}_{vpin_id}"),
+                    pg.send(data, output),
+                )
 
                 logging.info("Sent all records to Postgres and Redis")
 
