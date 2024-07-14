@@ -124,7 +124,7 @@ def Features202406_from_df(df: pd.DataFrame) -> List[Features202406]:
 
 async def fetch_vpin_ohlcv(pg: Connection, source: str) -> List[VpinOHLCV]:
     # ohlcvs = await pg.fetch_all_with_limit("vpin_ohlcv", limit=10000)
-    ohlcvs = await pg.fetch_all(source, instrument_id, vpin_id)
+    ohlcvs = await pg.fetch_all_by_inst_vpin(source, instrument_id, vpin_id)
     return [
         VpinOHLCV(
             ohlcv["instrument"],

@@ -1,4 +1,5 @@
 import os
+import ast
 import json
 import asyncio
 import numpy as np
@@ -49,8 +50,11 @@ def VpinOHLCV_from_df(df: pd.DataFrame) -> List[VpinOHLCV]:
     return v
 
 
-async def fetch_ohlcv(pg: Connection) -> List[OHLCV]:
-    ohlcvs = await pg.fetch("ohlcv", "vpin_ohlcv")
+async def fetch_ohlcv(pg: Connection, updated_data_only: bool = True) -> List[OHLCV]:
+    if updated_data_only:
+        ohlcvs = await pg.fetch("ohlcv", "vpin_ohlcv")
+    else:
+        ohlcvs = await pg.fetch_all("ohlcv")
     return [
         OHLCV(
             ohlcv["instrument"],
@@ -73,13 +77,16 @@ async def main():
     output = os.environ.get("OUTPUT")
     assert output, "OUTPUT is not set"
 
+    updated_data_only = ast.literal_eval(os.environ.get("UPDATED_DATA_ONLY"))
+    assert updated_data_only, "UPDATED_DATA_ONLY is not set"
+
     rd = RedisStore()
     await rd.connection_test()
 
     pg = Connection()
     await pg.connection_test()
 
-    ohlcvs = await fetch_ohlcv(pg)
+    ohlcvs = await fetch_ohlcv(pg, updated_data_only=updated_data_only)
 
     logger.info(f"ohlcvs: {len(ohlcvs)} rows")
     logger.info("Start subscribing to Redis PubSub channel...")
