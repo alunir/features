@@ -53,11 +53,11 @@ def msg_to_df(msg: dict) -> pd.DataFrame:
 async def send(df: pd.DataFrame, rd: RedisStore, pg: Connection):
     data = OHLCV_from_df(df)
     await asyncio.gather(rd.send(data, "ohlcv"), pg.send(data, "ohlcv"))
-    logging.info("Sent all records to Postgres and SurrealDB")
+    logging.info("Sent all records to Postgres and Redis")
 
 
 async def main():
-    # Wait for surrealdb start
+    # Wait for redis start
     rd = RedisStore()
     await rd.connection_test()
 

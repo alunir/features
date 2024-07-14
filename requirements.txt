@@ -10,3 +10,4 @@ pymarketstore
 websockets
 asyncpg
 redis
+numpy==1.26.4
