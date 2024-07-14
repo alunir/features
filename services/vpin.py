@@ -78,6 +78,7 @@ async def main():
     assert output, "OUTPUT is not set"
 
     fetch_all_data = ast.literal_eval(os.environ.get("FETCH_ALL_DATA", "False"))
+    logger.info(f"FETCH_ALL_DATA: {fetch_all_data}")
 
     rd = RedisStore()
     await rd.connection_test()
