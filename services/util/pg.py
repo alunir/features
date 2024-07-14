@@ -124,13 +124,15 @@ class Connection:
         async with self.conn.transaction():
             await self.conn.executemany(query, [astuple(d) for d in data])
 
-    async def fetch(self, target: str, source: str) -> List:
+    async def fetch(
+        self, target: str, source: str, instrument_id: str, vpin_id: str
+    ) -> List:
         """
         Fetches data from the Postgres database
         """
         async with self.conn.transaction():
             return await self.conn.fetch(
-                f"SELECT * FROM {target} WHERE Epoch > (SELECT Epoch FROM {source} ORDER BY Epoch DESC LIMIT 1) ORDER BY Epoch ASC"
+                f"SELECT * FROM {target} WHERE Epoch > (SELECT Epoch FROM {source} WHERE instrument = {instrument_id} and vpin = {vpin_id} ORDER BY Epoch DESC LIMIT 1) ORDER BY Epoch ASC"
             )
 
     async def fetch_all(self, target: str) -> List:

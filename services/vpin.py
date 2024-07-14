@@ -56,7 +56,7 @@ async def fetch_ohlcv(pg: Connection, fetch_all_data: bool = False) -> List[OHLC
     if fetch_all_data:
         ohlcvs = await pg.fetch_all("ohlcv")
     else:
-        ohlcvs = await pg.fetch("ohlcv", "vpin_ohlcv")
+        ohlcvs = await pg.fetch("ohlcv", "vpin_ohlcv", instrument_id, vpin_id)
     return [
         OHLCV(
             ohlcv["instrument"],
