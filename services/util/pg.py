@@ -142,9 +142,11 @@ class Connection:
                 f"SELECT * FROM {target} ORDER BY Epoch ASC LIMIT {limit}"
             )
 
-    async def fetch_all(self, target: str) -> List:
+    async def fetch_all(self, target: str, instrument_id: str, vpin_id: str) -> List:
         """
         Fetches data from the Postgres database
         """
         async with self.conn.transaction():
-            return await self.conn.fetch(f"SELECT * FROM {target} ORDER BY Epoch ASC")
+            return await self.conn.fetch(
+                f"SELECT * FROM {target} WHERE instrument = {instrument_id} and vpin = {vpin_id} ORDER BY Epoch ASC"
+            )
