@@ -18,6 +18,12 @@ logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO").upper())
 np.random.seed(42)
 
 
+instrument_id = int(os.environ.get("INSTRUMENT_ID"))
+assert instrument_id, "INSTRUMENT_ID is not set"
+vpin_id = int(os.environ.get("VPIN_ID"))
+assert vpin_id, "VPIN_ID is not set"
+
+
 def make_features(data: pd.DataFrame, max_imf=8):
     prices = np.expm1(data.Close.rename("Last"))
     ask = np.expm1(data.High.rename("Ask"))
@@ -66,8 +72,8 @@ def Features202406_from_df(df: pd.DataFrame) -> List[Features202406]:
     v: List[Features202406] = []
     for row in df.itertuples():
         d = Features202406(
-            1,  # Instrument ID 1 : Binance_ETH-USDT
-            1,  # VPIN ID 1 : VPIN = 1000
+            instrument_id,  # Instrument ID 1 : Binance_ETH-USDT
+            vpin_id,  # VPIN ID 1 : VPIN = 1000
             row.Epoch.to_pydatetime(),
             row.Volume,
             row.Number,
@@ -110,9 +116,9 @@ def Features202406_from_df(df: pd.DataFrame) -> List[Features202406]:
     return v
 
 
-async def fetch_vpin_ohlcv(pg: Connection) -> List[VpinOHLCV]:
+async def fetch_vpin_ohlcv(pg: Connection, source: str) -> List[VpinOHLCV]:
     # ohlcvs = await pg.fetch_all_with_limit("vpin_ohlcv", limit=10000)
-    ohlcvs = await pg.fetch_all("vpin_ohlcv")
+    ohlcvs = await pg.fetch_all(source)
     return [
         VpinOHLCV(
             ohlcv["instrument"],
@@ -138,13 +144,19 @@ async def main():
     pg = Connection()
     await pg.connection_test()
 
-    ohlcvs = await fetch_vpin_ohlcv(pg)
+    source = os.environ.get("SOURCE")
+    assert source, "SOURCE is not set"
+
+    output = os.environ.get("OUTPUT")
+    assert output, "OUTPUT is not set"
+
+    lag = int(os.environ.get("LAG"))
+    assert lag, "LAG is not set"
+
+    ohlcvs = await fetch_vpin_ohlcv(pg, source)
 
     logging.info(f"vpin_ohlcvs: {len(ohlcvs)} rows")
     logging.info("Start subscribing to Redis PubSub channel...")
-
-    channel = "vpin_ohlcv"
-    lag = 32
 
     async def reader(channel: redis.client.PubSub):
         while True:
@@ -155,7 +167,7 @@ async def main():
             logging.debug(f"Message: {message}")
 
             # fetch vpin_ohlcv from postgres again
-            ohlcvs = await fetch_vpin_ohlcv(pg)
+            ohlcvs = await fetch_vpin_ohlcv(pg, source)
             if len(ohlcvs) == 0:
                 continue
 
@@ -178,8 +190,8 @@ async def main():
 
             # write postgres
             await asyncio.gather(
-                rd.send_bulk(latest_features_for_algo, "features_202406"),
-                pg.send(data, "features_202406"),
+                rd.send_bulk(latest_features_for_algo, output),
+                pg.send(data, output),
             )
 
             logging.info(f"Sent all records to Postgres and lag {lag} records to Redis")
@@ -189,11 +201,11 @@ async def main():
     while True:
         try:
             async with rd.r.pubsub() as pubsub:
-                await pubsub.subscribe(channel)
+                await pubsub.subscribe(source)
                 await reader(pubsub)
         except redis.ConnectionError as e:
             logging.error(
-                f"Failed to subscribe to Redis PubSub channel {channel}. Error: {e}"
+                f"Failed to subscribe to Redis PubSub channel {source}. Error: {e}"
             )
             asyncio.sleep(30)
             continue

@@ -1,9 +1,9 @@
 services:
   pgweb:
     image: sosedoff/pgweb
-    container_name: surrealdb-pgweb
+    container_name: pgweb
     ports:
-      - "8081:8081"
+      - "8088:8081"
     env_file:
       - .env
     restart: on-failure

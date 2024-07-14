@@ -17,6 +17,11 @@ logging.basicConfig(
     level=os.getenv("LOG_LEVEL", "INFO").upper(),
 )
 
+instrument_id = int(os.environ.get("INSTRUMENT_ID"))
+assert instrument_id, "INSTRUMENT_ID is not set"
+vpin_id = int(os.environ.get("VPIN_ID"))
+assert vpin_id, "VPIN_ID is not set"
+
 
 def VpinOHLCV_from_df(df: pd.DataFrame) -> List[VpinOHLCV]:
     if "Epoch" not in df.columns:
@@ -24,8 +29,8 @@ def VpinOHLCV_from_df(df: pd.DataFrame) -> List[VpinOHLCV]:
     v: List[VpinOHLCV] = []
     for row in df.itertuples():
         d = VpinOHLCV(
-            1,  # Instrument ID 1 : Binance_ETH-USDT
-            1,  # VPIN ID 1 : VPIN = 1000
+            instrument_id,  # Instrument ID 1 : Binance_ETH-USDT
+            vpin_id,  # VPIN ID 1 : VPIN = 1000
             row.Epoch.to_pydatetime(),
             row.Open,
             row.High,
@@ -58,6 +63,12 @@ async def fetch_ohlcv(pg: Connection) -> List[OHLCV]:
 
 
 async def main():
+    bucket_size = int(os.environ.get("BUCKET_SIZE"))
+    assert bucket_size, "BUCKET_SIZE is not set"
+
+    output = os.environ.get("OUTPUT")
+    assert output, "OUTPUT is not set"
+
     rd = RedisStore()
     await rd.connection_test()
 
@@ -69,7 +80,7 @@ async def main():
     logging.info(f"ohlcvs: {len(ohlcvs)} rows")
     logging.info("Start subscribing to Redis PubSub channel...")
 
-    channel = "ohlcv"
+    source = "ohlcv"
 
     async def reader(channel: redis.client.PubSub):
         while True:
@@ -103,7 +114,7 @@ async def main():
 
                 imb_df = compute_imbalance_bars(
                     log1p_df,
-                    bucket_size=1000,
+                    bucket_size=bucket_size,
                 )
 
                 # compute_imbalance_bars returns an empty DataFrame if the input DataFrame is small
@@ -115,20 +126,18 @@ async def main():
                 data = VpinOHLCV_from_df(imb_df)
 
                 # write postgres
-                await asyncio.gather(
-                    rd.send(data, "vpin_ohlcv"), pg.send(data, "vpin_ohlcv")
-                )
+                await asyncio.gather(rd.send(data, output), pg.send(data, output))
 
                 logging.info("Sent all records to Postgres and Redis")
 
     while True:
         try:
             async with rd.r.pubsub() as pubsub:
-                await pubsub.subscribe(channel)
+                await pubsub.subscribe(source)
                 await reader(pubsub)
         except redis.ConnectionError as e:
             logging.error(
-                f"Failed to subscribe to Redis PubSub channel {channel}. Error: {e}"
+                f"Failed to subscribe to Redis PubSub channel {source}. Error: {e}"
             )
             asyncio.sleep(30)
             continue

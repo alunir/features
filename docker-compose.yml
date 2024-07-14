@@ -28,13 +28,37 @@ services:
       - "8766:8000"
     environment:
       - LOG_LEVEL=info
+      - INSTRUMENT_ID=1
+      - VPIN_ID=1
+      - BUCKET_SIZE=1000
+      - OUTPUT=vpin_ohlcv
     env_file:
       - .env
-    command: ["python3", "vpin-1e3.py"]
+    command: ["python3", "vpin.py"]
     volumes:
       - ./services:/usr/src/app
 
-  features-202406:
+  vpin-2e2:
+    build:
+      context: .
+      args:
+        - GITHUB_TOKEN=${GITHUB_TOKEN}
+        - BASE_DIR=./services
+    ports:
+      - "8766:8000"
+    environment:
+      - LOG_LEVEL=info
+      - INSTRUMENT_ID=1
+      - VPIN_ID=2
+      - BUCKET_SIZE=200
+      - OUTPUT=vpin_ohlcv
+    env_file:
+      - .env
+    command: ["python3", "vpin.py"]
+    volumes:
+      - ./services:/usr/src/app
+
+  features-202406-1e3:
     build:
       context: .
       args:
@@ -44,6 +68,32 @@ services:
       - "8767:8000"
     environment:
       - LOG_LEVEL=info
+      - INSTRUMENT_ID=1
+      - VPIN_ID=1
+      - SOURCE=vpin_ohlcv
+      - OUTPUT=features_202406
+      - LAG=32
+    env_file:
+      - .env
+    command: ["python3", "features-202406.py"]
+    volumes:
+      - ./services:/usr/src/app
+
+  features-202406-2e2:
+    build:
+      context: .
+      args:
+        - GITHUB_TOKEN=${GITHUB_TOKEN}
+        - BASE_DIR=./services
+    ports:
+      - "8767:8000"
+    environment:
+      - LOG_LEVEL=info
+      - INSTRUMENT_ID=1
+      - VPIN_ID=2
+      - SOURCE=vpin_ohlcv
+      - OUTPUT=features_202406
+      - LAG=128
     env_file:
       - .env
     command: ["python3", "features-202406.py"]
