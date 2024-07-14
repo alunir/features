@@ -5,8 +5,6 @@ services:
       args:
         - GITHUB_TOKEN=${GITHUB_TOKEN}
         - BASE_DIR=./services
-    ports:
-      - "8765:8000"
     environment:
       - LOG_LEVEL=info
       - BACKOFF_DAYS=1
@@ -24,8 +22,6 @@ services:
       args:
         - GITHUB_TOKEN=${GITHUB_TOKEN}
         - BASE_DIR=./services
-    ports:
-      - "8766:8000"
     environment:
       - LOG_LEVEL=info
       - INSTRUMENT_ID=1
@@ -44,8 +40,6 @@ services:
       args:
         - GITHUB_TOKEN=${GITHUB_TOKEN}
         - BASE_DIR=./services
-    ports:
-      - "8766:8000"
     environment:
       - LOG_LEVEL=info
       - INSTRUMENT_ID=1
@@ -64,8 +58,6 @@ services:
       args:
         - GITHUB_TOKEN=${GITHUB_TOKEN}
         - BASE_DIR=./services
-    ports:
-      - "8767:8000"
     environment:
       - LOG_LEVEL=info
       - INSTRUMENT_ID=1
@@ -85,8 +77,6 @@ services:
       args:
         - GITHUB_TOKEN=${GITHUB_TOKEN}
         - BASE_DIR=./services
-    ports:
-      - "8767:8000"
     environment:
       - LOG_LEVEL=info
       - INSTRUMENT_ID=1
