@@ -1,9 +1,10 @@
 ## features
 
-### ohlcv
- - Use `surrealdb.py`: official package. async
- - Not supported `live query` yet as of 0.3.2. See [here](https://stackoverflow.com/questions/78236638/how-i-can-use-live-surrealdb-queries-in-python)
-
-### vpin-1e3, features
- - To use `live query`, use `surrealist` : unofficial package. sync
- - `live query` is supported.
+# Install docker-compose on GCP VM
+```
+sudo curl -sSL https://github.com/docker/compose/releases/download/v2.27.1/docker-compose-linux-x86_64 -o /var/lib/google/docker-compose
+sudo chmod o+x /var/lib/google/docker-compose
+mkdir -p ~/.docker/cli-plugins
+ln -sf /var/lib/google/docker-compose ~/.docker/cli-plugins/docker-compose
+docker compose version
+```

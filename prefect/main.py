@@ -115,15 +115,13 @@ async def etl_flow(instruments: List[str], fdim: float, thresh: float):
 
 
 if __name__ == "__main__":
-    asyncio.run(
-        etl_flow.serve(
-            name="features",
-            tags=["features"],
-            parameters={
-                "instruments": ["Binance_ETH-USDT", "Binance_ETH-USDT.P"],
-                "fdim": 0.1,
-                "thresh": 1e-4
-            },
-            interval=60
-        )
+    etl_flow.serve(
+        name="features",
+        tags=["features"],
+        parameters={
+            "instruments": ["Binance_ETH-USDT", "Binance_ETH-USDT.P"],
+            "fdim": 0.1,
+            "thresh": 1e-4
+        },
+        interval=60
     )
