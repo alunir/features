@@ -11,8 +11,20 @@ class OHLCV:
     Low: float
     Close: float
     Volume: float
-    Number: int
+    Trades: int
 
+
+@dataclass
+class FFD:
+    Instrument: int
+    Resolution: int
+    Epoch: datetime
+    Open: float
+    High: float
+    Low: float
+    Close: float
+    Volume: float
+    Trades: int
 
 @dataclass
 class VpinOHLCV:
@@ -26,7 +38,7 @@ class VpinOHLCV:
     Volume: float
     BuyVolume: float
     SellVolume: float
-    Number: float
+    Trades: float
 
 
 @dataclass
@@ -35,7 +47,7 @@ class Features202406:
     VPIN: int
     Epoch: datetime
     Volume: float
-    Number: float
+    Trades: float
     imf_imf_0: float
     imf_imf_1: float
     imf_imf_2: float

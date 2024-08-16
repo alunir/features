@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS ohlcvn (
     Low NUMERIC NOT NULL,
     Close NUMERIC NOT NULL,
     Volume NUMERIC NOT NULL,
-    Number bigint NOT NULL,
+    Trades bigint NOT NULL,
     PRIMARY KEY (Instrument, Epoch),
     FOREIGN KEY (Instrument) REFERENCES instrument(id)
 );
