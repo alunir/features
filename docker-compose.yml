@@ -1,4 +1,21 @@
 services:
+  prefect:
+    build:
+      context: .
+      args:
+        - GITHUB_TOKEN=${GITHUB_TOKEN}
+        - BASE_DIR=./prefect
+        - PREFECT_API_KEY=${PREFECT_API_KEY}
+        - PREFECT_WORKSPACE=${PREFECT_WORKSPACE}
+    environment:
+      - LOG_LEVEL=info
+      - BACKOFF_DAYS=1
+    env_file:
+      - .env
+    command: ["python3", "main.py"]
+    volumes:
+      - ./prefect:/usr/src/app
+
   ohlcv:
     build:
       context: .

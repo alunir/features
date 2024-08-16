@@ -1,5 +1,5 @@
 -- +goose Up
-CREATE TABLE IF NOT EXISTS ohlcv (
+CREATE TABLE IF NOT EXISTS ohlcvn (
     Instrument bigint NOT NULL,
     Epoch TIMESTAMP NOT NULL,
     Open NUMERIC NOT NULL,
@@ -13,4 +13,4 @@ CREATE TABLE IF NOT EXISTS ohlcv (
 );
 
 -- +goose Down
-DROP TABLE IF EXISTS ohlcv;
+DROP TABLE IF EXISTS ohlcvn;
