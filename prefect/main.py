@@ -6,18 +6,10 @@ from typing import List
 from util.types import OHLCV
 from util.pg import Connection
 import pymarketstore as pymkts
-from logging import getLogger, StreamHandler, Formatter
 
-from prefect import flow, task
+from prefect import flow, task, get_run_logger
 from mlfinlab.features.fracdiff import frac_diff_ffd
 
-
-logger = getLogger(__name__)
-stream_handler = StreamHandler()
-formatter = Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-stream_handler.setFormatter(formatter)
-logger.addHandler(stream_handler)
-logger.setLevel(os.getenv("LOG_LEVEL", "INFO").upper())
 
 marketstore_url = os.environ.get("MARKETSTORE_URL", None)
 
@@ -59,6 +51,7 @@ def msg_to_df(msg: dict) -> pd.DataFrame:
 
 
 async def send(df: pd.DataFrame, pg: Connection):
+    logger = get_run_logger()
     data = OHLCV_from_df(df)
     await pg.send(data, "ohlcvn")
     logger.info("Sent all records to Postgres")
@@ -66,6 +59,7 @@ async def send(df: pd.DataFrame, pg: Connection):
 
 @task(log_prints=True)
 async def ohlcvn_stream_task(pg, instrument: str):
+    logger = get_run_logger()
     client = pymkts.Client(endpoint=f"http://{marketstore_url}:5993/rpc")
 
     backoff_days = int(os.environ.get("BACKOFF_DAYS", 1))
@@ -100,18 +94,30 @@ async def ffd_stream_task(pg, df: pd.DataFrame, fdim: float, thresh: float):
     
     return ffd_df
 
-@task(log_prints=True)
+
+@flow(log_prints=True)
 async def stream_task(pg, instrument: str, fdim: float, thresh: float):
+    logger = get_run_logger()
     df = await ohlcvn_stream_task(pg, instrument)
     await ffd_stream_task(pg, df, fdim, thresh)
+    logger.debug(f"Updated for {instrument}")
 
 
 @flow(log_prints=True)
 async def etl_flow(instruments: List[str], fdim: float, thresh: float):
+    logger = get_run_logger()
+
     pg = Connection()
     await pg.connection_test()
+    
+    logger.info(f"Start streaming for {instruments}")
 
-    asyncio.gather(*[stream_task(pg, instrument, fdim, thresh) for instrument in instruments])
+    results = []
+    for instrument in instruments:
+        results.append(
+            stream_task.submit(pg, instrument, fdim, thresh)
+        )
+    return [i for p in results for i in p.results()]
 
 
 if __name__ == "__main__":
