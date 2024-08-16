@@ -15,6 +15,15 @@ services:
     volumes:
       - ./prefect:/usr/src/app
 
+  redis:
+    image: redis:latest
+    ports:
+      - "9876:6379"
+    command: ["redis-server", "/etc/redis/redis.conf"]
+    volumes:
+      - ./redis.conf:/etc/redis/redis.conf
+    restart: on-failure
+
   monitor:
     build:
       context: ./monitor
