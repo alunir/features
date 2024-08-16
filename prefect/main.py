@@ -7,7 +7,6 @@ from util.pg_sync import Connection
 import pymarketstore as pymkts
 
 from prefect import flow, task, get_run_logger
-from prefect.schedules import CronSchedule
 from prefect.task_runners import ConcurrentTaskRunner
 from mlfinlab.features.fracdiff import frac_diff_ffd
 
@@ -115,7 +114,7 @@ def stream_flow(pg, instrument_id: int, instrument: str, resolutions: List[Tuple
         ffd_stream_task.submit(pg, instrument_id, resolution, df, thresh)
 
 
-@flow(log_prints=True, schedule=CronSchedule(cron="2 * * * *"))
+@flow(log_prints=True)
 async def etl_flow(instruments: List[Tuple[int, str]], resolutions: List[Tuple[int, int, float]], backoff_days: int, thresh: float):
     logger = get_run_logger()
     pg = Connection()
@@ -139,5 +138,5 @@ if __name__ == "__main__":
             "backoff_days": 1,
             "thresh": 1e-4
         },
-        interval=60
+        cron="*/1 * * * *"
     )
