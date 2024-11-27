@@ -1,5 +1,5 @@
 -- +goose Up
-CREATE TABLE IF NOT EXISTS ohlcvn (
+CREATE TABLE IF NOT EXISTS ohlcvt (
     Instrument bigint NOT NULL,
     Epoch TIMESTAMP NOT NULL,
     Open NUMERIC NOT NULL,
@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS ohlcvn (
     PRIMARY KEY (Instrument, Epoch),
     FOREIGN KEY (Instrument) REFERENCES instrument(id)
 );
+CREATE INDEX idx_instrument_epoch_desc ON ohlcvt (Instrument, Epoch DESC);
 
 -- +goose Down
-DROP TABLE IF EXISTS ohlcvn;
+DROP TABLE IF EXISTS ohlcvt;

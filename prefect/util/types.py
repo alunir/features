@@ -17,7 +17,8 @@ class OHLCV:
 @dataclass
 class FFD:
     Instrument: int
-    Resolution: int
+    Resolution: str
+    Fdim: float
     Epoch: datetime
     Open: float
     High: float
@@ -25,6 +26,72 @@ class FFD:
     Close: float
     Volume: float
     Trades: int
+
+
+@dataclass
+class EMD:
+    Instrument: int
+    Resolution: str
+    Fdim: float
+    Epoch: datetime
+    If_0: float
+    If_1: float
+    If_2: float
+    If_3: float
+    If_4: float
+    If_5: float
+    If_6: float
+    If_7: float
+    If_8: float
+    If_9: float
+    If_10: float
+    If_11: float
+    If_12: float
+    If_13: float
+    If_14: float
+    If_15: float
+    Ia_0: float
+    Ia_1: float
+    Ia_2: float
+    Ia_3: float
+    Ia_4: float
+    Ia_5: float
+    Ia_6: float
+    Ia_7: float
+    Ia_8: float
+    Ia_9: float
+    Ia_10: float
+    Ia_11: float
+    Ia_12: float
+    Ia_13: float
+    Ia_14: float
+    Ia_15: float
+    Ip_0: float
+    Ip_1: float
+    Ip_2: float
+    Ip_3: float
+    Ip_4: float
+    Ip_5: float
+    Ip_6: float
+    Ip_7: float
+    Ip_8: float
+    Ip_9: float
+    Ip_10: float
+    Ip_11: float
+    Ip_12: float
+    Ip_13: float
+    Ip_14: float
+    Ip_15: float
+
+
+@dataclass
+class PremiumIndex:
+    SpotInstrument: int
+    FuturesInstrument: int
+    Resolution: str
+    Epoch: datetime
+    PremiumIndex: float
+
 
 @dataclass
 class VpinOHLCV:
