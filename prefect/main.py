@@ -9,7 +9,7 @@ from util.pg_sync import Connection
 import pymarketstore as pymkts
 
 from prefect import flow, task, get_run_logger
-from prefect.task_runners import ConcurrentFuturesTaskRunner
+from prefect.futures import wait
 # from prefect_multiprocess.task_runners import MultiprocessTaskRunner
 from mlfinlab.features.fracdiff import frac_diff_ffd
 
@@ -315,16 +315,22 @@ def premium_index_stream_task(pg, inst_pair: InstrumentPair, parameters: Paramet
 
 
 @task(log_prints=True)
-def every_single_process_task(parameter: Parameter, df: pd.DataFrame, pg, instrument_id: int, thresh: float, max_imfs: int):
+def calc_features_task(parameter: Parameter, df: pd.DataFrame, pg, instrument_id: int, thresh: float, max_imfs: int):
     ffd_df = ffd_stream_task.submit(pg, instrument_id, parameter, df, thresh)
-    emd_stream_task.submit(pg, instrument_id, parameter, ffd_df, max_imfs)
-    return
+    emd_df = emd_stream_task.submit(pg, instrument_id, parameter, ffd_df, max_imfs)
+    return emd_df
 
 
-@flow(log_prints=True, task_runner=ConcurrentFuturesTaskRunner())
-def stream_flow(pg, inst: Instrument, parameters: Parameters, backoff_ticks: int, thresh: float, max_imfs: int):
-    df = ohlcvt_stream_task.submit(pg, inst, backoff_ticks)
-    return [every_single_process_task.submit(parameter, df, pg, inst.ID, thresh, max_imfs) for parameter in parameters]
+@flow(log_prints=True)
+def etl_flow_inst_pair(pg, inst_pair: InstrumentPair, parameter: Parameter, backoff_ticks: int, thresh: float, max_imfs: int):
+    primary_df = ohlcvt_stream_task.submit(pg, inst_pair.Primary, backoff_ticks)
+    secondary_df = ohlcvt_stream_task.submit(pg, inst_pair.Secondary, backoff_ticks)
+
+    tasks = []
+    tasks += [premium_index_stream_task.submit(pg, inst_pair, parameter, primary_df, secondary_df)]
+    tasks += [calc_features_task.submit(parameter, primary_df, pg, inst_pair.Primary.ID, thresh, max_imfs)]
+    tasks += [calc_features_task.submit(parameter, secondary_df, pg, inst_pair.Secondary.ID, thresh, max_imfs)]
+    wait(tasks)
 
 
 @flow(log_prints=True)
@@ -333,16 +339,17 @@ async def etl_flow(instruments: List[InstrumentUnion], params: Parameters, backo
     pg = Connection()
     pg.connection_test()
     
+    tasks = []
     for inst in instruments:
         if isinstance(inst, Instrument):
-            stream_flow(pg, inst, params, backoff_ticks, thresh, max_imfs)
+            df = ohlcvt_stream_task.submit(pg, inst, backoff_ticks)
+            tasks += [calc_features_task.submit(parameter, df, pg, inst.ID, thresh, max_imfs) for parameter in params]
         elif isinstance(inst, InstrumentPair):
-            primary_df = stream_flow(pg, inst.Primary, params, backoff_ticks, thresh, max_imfs)
-            secondary_df = stream_flow(pg, inst.Secondary, params, backoff_ticks, thresh, max_imfs)
-            premium_index_stream_task.submit(pg, inst, params, primary_df, secondary_df)
+            tasks += [etl_flow_inst_pair.submit(pg, inst, parameter, backoff_ticks, thresh, max_imfs) for parameter in params]
         else:
             logger.warning(f"Invalid type: {type(inst)}")
         logger.info(f"Updated for {inst}")
+    wait(tasks)
 
 
 if __name__ == "__main__":
