@@ -4,6 +4,7 @@ import traceback
 import pandas as pd
 from enum import Enum
 from typing import List, Tuple
+from dataclasses import dataclass
 from util.types import OHLCV, FFD, EMD, PremiumIndex
 from util.pg_sync import Connection
 import pymarketstore as pymkts
@@ -58,12 +59,14 @@ class Resolution(Enum):
         return string_mapping[self]
 
 
+@dataclass
 class Instrument:
     ID: int
     Name: str
 
 
 # premium_indexを計算するためのペア
+@dataclass
 class InstrumentPair:
     Primary: Instrument
     Secondary: Instrument
