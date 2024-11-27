@@ -9,7 +9,8 @@ from util.pg_sync import Connection
 import pymarketstore as pymkts
 
 from prefect import flow, task, get_run_logger
-from prefect.task_runners import MultiProcessTaskRunner
+# from prefect.task_runners import ConcurrentFuturesTaskRunner
+from prefect_multiprocess.task_runners import MultiprocessTaskRunner
 from mlfinlab.features.fracdiff import frac_diff_ffd
 
 

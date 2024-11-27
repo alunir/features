@@ -8,7 +8,6 @@ services:
         - PREFECT_WORKSPACE=${PREFECT_WORKSPACE}
     environment:
       - LOG_LEVEL=info
-      - BACKOFF_DAYS=1
     env_file:
       - .env
     command: ["python3", "main.py"]
