@@ -9,8 +9,8 @@ from util.pg_sync import Connection
 import pymarketstore as pymkts
 
 from prefect import flow, task, get_run_logger
-# from prefect.task_runners import ConcurrentFuturesTaskRunner
-from prefect_multiprocess.task_runners import MultiprocessTaskRunner
+from prefect.task_runners import ConcurrentFuturesTaskRunner
+# from prefect_multiprocess.task_runners import MultiprocessTaskRunner
 from mlfinlab.features.fracdiff import frac_diff_ffd
 
 
@@ -321,7 +321,7 @@ def every_single_process_task(parameter: Parameter, df: pd.DataFrame, pg, instru
     return
 
 
-@flow(log_prints=True, task_runner=MultiProcessTaskRunner())
+@flow(log_prints=True, task_runner=ConcurrentFuturesTaskRunner())
 def stream_flow(pg, inst: Instrument, parameters: Parameters, backoff_ticks: int, thresh: float, max_imfs: int):
     df = ohlcvt_stream_task.submit(pg, inst, backoff_ticks)
     return [every_single_process_task.submit(parameter, df, pg, inst.ID, thresh, max_imfs) for parameter in parameters]
