@@ -326,14 +326,22 @@ def calc_features_task(parameter: Parameter, df: pd.DataFrame, pg, instrument_id
 
 @flow(log_prints=True)
 def etl_flow_inst_pair(pg, inst_pair: InstrumentPair, parameter: Parameter, backoff_ticks: int, thresh: float, max_imfs: int):
+    logger = get_run_logger()
+
     primary_df = ohlcvt_stream_task.submit(pg, inst_pair.Primary, backoff_ticks)
     secondary_df = ohlcvt_stream_task.submit(pg, inst_pair.Secondary, backoff_ticks)
+    
+    logger.info(f"fetched data for {inst_pair.Primary.Name} and {inst_pair.Secondary.Name}")
 
     tasks = []
     tasks += [premium_index_stream_task.submit(pg, inst_pair, parameter, primary_df, secondary_df)]
     tasks += [calc_features_task.submit(parameter, primary_df, pg, inst_pair.Primary.ID, thresh, max_imfs)]
     tasks += [calc_features_task.submit(parameter, secondary_df, pg, inst_pair.Secondary.ID, thresh, max_imfs)]
     wait(tasks)
+    
+    logger.info(f"Updated for {inst_pair}")
+    
+    return
 
 
 @flow(log_prints=True)
@@ -341,6 +349,7 @@ async def etl_flow(instruments: List[InstrumentUnion], params: Parameters, backo
     logger = get_run_logger()
     pg = Connection()
     pg.connection_test()
+    logger.info("Connected to Postgres")
     
     tasks = []
     for inst in instruments:
@@ -351,8 +360,8 @@ async def etl_flow(instruments: List[InstrumentUnion], params: Parameters, backo
             tasks += [etl_flow_inst_pair.submit(pg, inst, parameter, backoff_ticks, thresh, max_imfs) for parameter in params]
         else:
             logger.warning(f"Invalid type: {type(inst)}")
-        logger.info(f"Updated for {inst}")
     wait(tasks)
+    logger.info("Updated for all instruments")
 
 
 if __name__ == "__main__":
