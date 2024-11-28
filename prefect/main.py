@@ -419,7 +419,7 @@ def etl_flow(instruments: List[InstrumentUnion], p: Parameter):
             ]
         else:
             logger.warning(f"Invalid type: {type(inst)}")
-    wait(tasks)
+    # wait(tasks)
     logger.info("Updated for all instruments")
 
 

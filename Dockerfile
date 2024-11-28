@@ -1,7 +1,7 @@
 FROM python:3.12-slim
 
 WORKDIR /usr/src/app
-EXPOSE 8000
+EXPOSE 8080
 
 RUN apt-get update && apt-get install -y libopenblas-dev git build-essential
 
