@@ -8,11 +8,11 @@ services:
         - PREFECT_WORKSPACE=${PREFECT_WORKSPACE}
     environment:
       - LOG_LEVEL=info
+      # - PREFECT_LOGGING_LEVEL=DEBUG
     env_file:
       - .env
+    working_dir: /usr/src/app/prefect
     command: ["python3", "main.py"]
-    volumes:
-      - ./prefect:/usr/src/app
 
   redis:
     image: redis:latest
