@@ -12,7 +12,7 @@ from dataclasses import astuple
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO").upper())
 
 
-UPSERT_OHLCV_QUERY = """
+UPSERT_OHLCVT_QUERY = """
 INSERT INTO ohlcvt (Instrument, Epoch, Open, High, Low, Close, Volume, Trades)
 VALUES %s
 ON CONFLICT (Instrument, Epoch)
@@ -94,9 +94,9 @@ Ip_15 = EXCLUDED.Ip_15;
 """
 
 UPSERT_PREMIUM_INDEX_QUERY = """
-INSERT INTO premium_index (SpotInstrument, FutureInstrument, Resolution, Epoch, PremiumIndex)
+INSERT INTO premium_index (SpotInstrument, FuturesInstrument, Resolution, Epoch, PremiumIndex)
 VALUES %s
-ON CONFLICT (SpotInstrument, FutureInstrument, Resolution, Epoch)
+ON CONFLICT (SpotInstrument, FuturesInstrument, Resolution, Epoch)
 DO UPDATE SET
 PremiumIndex = EXCLUDED.PremiumIndex;
 """
@@ -187,8 +187,8 @@ class Connection:
         """
         logging.debug(f"Inserting {len(data)} rows into Postgres")
         match table:
-            case "ohlcvn":
-                query = UPSERT_OHLCV_QUERY
+            case "ohlcvt":
+                query = UPSERT_OHLCVT_QUERY
             case "ffd":
                 query = UPSERT_FFD_QUERY
             case "emd":
