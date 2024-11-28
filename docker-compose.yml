@@ -11,7 +11,7 @@ services:
       # - PREFECT_LOGGING_LEVEL=DEBUG
     env_file:
       - .env
-    working_dir: /usr/src/app/prefect
+    working_dir: /usr/src/app/etl
     command: ["python3", "main.py"]
 
   redis:
