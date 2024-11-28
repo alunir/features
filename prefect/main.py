@@ -3,25 +3,26 @@ import emd
 import traceback
 import pandas as pd
 from enum import Enum
-from typing import List, Tuple, Dict
+
+import uvicorn
+from fastapi import FastAPI
+from typing import List, Dict
 from pydantic import BaseModel
 from util.types import OHLCV, FFD, EMD, PremiumIndex
 from util.pg_sync import Connection
 import pymarketstore as pymkts
 
-from prefect.server.schemas.schedules import CronSchedule
-
 from prefect import flow, task, get_run_logger
 from prefect.futures import wait
-
-# from prefect_multiprocess.task_runners import MultiprocessTaskRunner
-from mlfinlab.features.fracdiff import frac_diff_ffd
 from prefect.utilities.annotations import quote
+from mlfinlab.features.fracdiff import frac_diff_ffd
 
 
 marketstore_url = os.environ.get("MARKETSTORE_URL", None)
 
 columns = ["Open", "High", "Low", "Close", "Volume", "Trades"]
+
+app = FastAPI()
 
 
 # 解像度を表すEnumの定義
@@ -61,9 +62,6 @@ class Resolution(Enum):
             Resolution.OneDay: "1D",
         }
         return string_mapping[self]
-
-
-resolution = Resolution.from_string(os.environ.get("RESOLUTION", "1Min"))
 
 
 class Instrument(BaseModel):
@@ -423,7 +421,15 @@ def etl_flow(instruments: List[InstrumentUnion], p: Parameter):
     logger.info("Updated for all instruments")
 
 
-etl_flow(
-    name="etl-flow",
-    parameters={"instruments": instruments, "params": params[resolution]},
-)
+@app.get("/")
+def root(resol: str):
+    resolution = Resolution.from_string(resol)
+    etl_flow(
+        name="etl-flow",
+        parameters={"instruments": instruments, "params": params[resolution]},
+    )
+
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 8080))  # Cloud Run用のポート設定
+    uvicorn.run(app, host="0.0.0.0", port=port)

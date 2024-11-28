@@ -13,4 +13,6 @@ psycopg2-binary
 redis
 numpy==1.26.4
 prefect==3.1.4
+fastapi
+uvicorn
 # prefect-multiprocess
