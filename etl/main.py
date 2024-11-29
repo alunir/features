@@ -18,6 +18,10 @@ from prefect.utilities.annotations import quote
 from mlfinlab.features.fracdiff import frac_diff_ffd
 
 
+class Request(BaseModel):
+    resolution: str
+
+
 marketstore_url = os.environ.get("MARKETSTORE_URL", None)
 
 columns = ["Open", "High", "Low", "Close", "Volume", "Trades"]
@@ -155,6 +159,22 @@ def EMD_from_df(instrument_id: int, resolution: Resolution, fdim: float, df: pd.
             resolution.to_string(),
             fdim,
             row.Epoch.to_pydatetime(),
+            row.imf_0,
+            row.imf_1,
+            row.imf_2,
+            row.imf_3,
+            row.imf_4,
+            row.imf_5,
+            row.imf_6,
+            row.imf_7,
+            row.imf_8,
+            row.imf_9,
+            row.imf_10,
+            row.imf_11,
+            row.imf_12,
+            row.imf_13,
+            row.imf_14,
+            row.imf_15,
             row.if_0,
             row.if_1,
             row.if_2,
@@ -285,6 +305,7 @@ def emd_stream_task(pg, resolution: Resolution, instrument_id: int, p: Parameter
     IP, IF, IA = emd.spectra.frequency_transform(imfs, sample_rate, 'nht')
 
     for i in range(0, p.max_imfs):
+        emd_df[f"imf_{i}"] = imfs[i] if len(imfs) > i else None  # Intrinsic Mode Function
         emd_df[f"ip_{i}"] = IP[:, i] if IP.shape[1] > i else None  # Instantaneous Power
         emd_df[f"if_{i}"] = IF[:, i] if IF.shape[1] > i else None  # Instantaneous Frequency
         emd_df[f"ia_{i}"] = IA[:, i] if IA.shape[1] > i else None  # Instantaneous Amplitude
@@ -376,8 +397,8 @@ def etl_flow(resolution: Resolution, instruments: List[InstrumentUnion], p: Para
 
 
 @app.post("/")
-def root(resol: str):
-    resolution = Resolution.from_string(resol)
+def root(req: Request):
+    resolution = Resolution.from_string(req.resolution)
     
     instruments = [
                 InstrumentPair(

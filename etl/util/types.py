@@ -34,6 +34,22 @@ class EMD:
     Resolution: str
     Fdim: float
     Epoch: datetime
+    Imf_0: float
+    Imf_1: float
+    Imf_2: float
+    Imf_3: float
+    Imf_4: float
+    Imf_5: float
+    Imf_6: float
+    Imf_7: float
+    Imf_8: float
+    Imf_9: float
+    Imf_10: float
+    Imf_11: float
+    Imf_12: float
+    Imf_13: float
+    Imf_14: float
+    Imf_15: float
     If_0: float
     If_1: float
     If_2: float

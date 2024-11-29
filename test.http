@@ -1,2 +1,6 @@
-POST http://localhost:8080/?resol=1Min
+POST http://localhost:8080/
 Content-Type: application/json
+
+{
+    "resolution": "1Min"
+}
