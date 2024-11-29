@@ -96,10 +96,10 @@ resolutions: List[Resolution] = [
     Resolution.OneDay,
 ]
 
-thresh = 1e-4
-fdim = 0.3
-max_imfs = 16
-backoff_ticks = 24 * 60 * 7
+thresh = float(os.getenv("THRESH", 1e-4))
+fdim = float(os.getenv("FDIM", 0.3))
+max_imfs = int(os.getenv("MAX_IMFS", 16))
+backoff_ticks = int(os.getenv("BACKOFF_TICKS", 24 * 60 * 7))   # 1 week
 
 # パラメータの例
 Parameters = Dict[Resolution, Parameter]  # パラメータのリスト
