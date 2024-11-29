@@ -296,6 +296,7 @@ def ffd_stream_task(pg, resolution: Resolution, instrument_id: int, p: Parameter
 
 @task(log_prints=True)
 def emd_stream_task(pg, resolution: Resolution, instrument_id: int, p: Parameter, ffd_df: pd.DataFrame):
+    l: int = len(ffd_df)
     emd_df = pd.DataFrame({}, index=ffd_df.index)
 
     imfs = emd.sift.sift(ffd_df["Close"].values, max_imfs=p.max_imfs)
@@ -305,10 +306,12 @@ def emd_stream_task(pg, resolution: Resolution, instrument_id: int, p: Parameter
     IP, IF, IA = emd.spectra.frequency_transform(imfs, sample_rate, 'nht')
 
     for i in range(0, p.max_imfs):
-        emd_df[f"imf_{i}"] = imfs[i] if len(imfs) > i else None  # Intrinsic Mode Function
-        emd_df[f"ip_{i}"] = IP[:, i] if IP.shape[1] > i else None  # Instantaneous Power
-        emd_df[f"if_{i}"] = IF[:, i] if IF.shape[1] > i else None  # Instantaneous Frequency
-        emd_df[f"ia_{i}"] = IA[:, i] if IA.shape[1] > i else None  # Instantaneous Amplitude
+        # print(imfs.shape)  # (l, 2)
+        # print(IP.shape)  # (l, 2)
+        emd_df[f"imf_{i}"] = imfs[:, i] if imfs.shape[1] > i else [None] * l  # Intrinsic Mode Function
+        emd_df[f"ip_{i}"] = IP[:, i] if IP.shape[1] > i else [None] * l  # Instantaneous Power
+        emd_df[f"if_{i}"] = IF[:, i] if IF.shape[1] > i else [None] * l  # Instantaneous Frequency
+        emd_df[f"ia_{i}"] = IA[:, i] if IA.shape[1] > i else [None] * l  # Instantaneous Amplitude
 
     data = EMD_from_df(instrument_id, resolution, p.fdim, emd_df)
     pg.send(data, "emd")

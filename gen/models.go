@@ -63,6 +63,22 @@ type Emd struct {
 	Resolution Resolution
 	Fdim       string
 	Epoch      time.Time
+	Imf0       sql.NullString
+	Imf1       sql.NullString
+	Imf2       sql.NullString
+	Imf3       sql.NullString
+	Imf4       sql.NullString
+	Imf5       sql.NullString
+	Imf6       sql.NullString
+	Imf7       sql.NullString
+	Imf8       sql.NullString
+	Imf9       sql.NullString
+	Imf10      sql.NullString
+	Imf11      sql.NullString
+	Imf12      sql.NullString
+	Imf13      sql.NullString
+	Imf14      sql.NullString
+	Imf15      sql.NullString
 	If0        sql.NullString
 	If1        sql.NullString
 	If2        sql.NullString

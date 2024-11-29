@@ -39,10 +39,26 @@ Trades = EXCLUDED.Trades;
 """
 
 UPSERT_EMD_QUERY = """
-INSERT INTO emd (Instrument, Resolution, Fdim, Epoch, If_0, If_1, If_2, If_3, If_4, If_5, If_6, If_7, If_8, If_9, If_10, If_11, If_12, If_13, If_14, If_15, Ia_0, Ia_1, Ia_2, Ia_3, Ia_4, Ia_5, Ia_6, Ia_7, Ia_8, Ia_9, Ia_10, Ia_11, Ia_12, Ia_13, Ia_14, Ia_15, Ip_0, Ip_1, Ip_2, Ip_3, Ip_4, Ip_5, Ip_6, Ip_7, Ip_8, Ip_9, Ip_10, Ip_11, Ip_12, Ip_13, Ip_14, Ip_15)
+INSERT INTO emd (Instrument, Resolution, Fdim, Epoch, Imf_0, Imf_1, Imf_2, Imf_3, Imf_4, Imf_5, Imf_6, Imf_7, Imf_8, Imf_9, Imf_10, Imf_11, Imf_12, Imf_13, Imf_14, Imf_15, If_0, If_1, If_2, If_3, If_4, If_5, If_6, If_7, If_8, If_9, If_10, If_11, If_12, If_13, If_14, If_15, Ia_0, Ia_1, Ia_2, Ia_3, Ia_4, Ia_5, Ia_6, Ia_7, Ia_8, Ia_9, Ia_10, Ia_11, Ia_12, Ia_13, Ia_14, Ia_15, Ip_0, Ip_1, Ip_2, Ip_3, Ip_4, Ip_5, Ip_6, Ip_7, Ip_8, Ip_9, Ip_10, Ip_11, Ip_12, Ip_13, Ip_14, Ip_15)
 VALUES %s
 ON CONFLICT (Instrument, Resolution, Fdim, Epoch)
 DO UPDATE SET
+Imf_0 = EXCLUDED.Imf_0,
+Imf_1 = EXCLUDED.Imf_1,
+Imf_2 = EXCLUDED.Imf_2,
+Imf_3 = EXCLUDED.Imf_3,
+Imf_4 = EXCLUDED.Imf_4,
+Imf_5 = EXCLUDED.Imf_5,
+Imf_6 = EXCLUDED.Imf_6,
+Imf_7 = EXCLUDED.Imf_7,
+Imf_8 = EXCLUDED.Imf_8,
+Imf_9 = EXCLUDED.Imf_9,
+Imf_10 = EXCLUDED.Imf_10,
+Imf_11 = EXCLUDED.Imf_11,
+Imf_12 = EXCLUDED.Imf_12,
+Imf_13 = EXCLUDED.Imf_13,
+Imf_14 = EXCLUDED.Imf_14,
+Imf_15 = EXCLUDED.Imf_15,
 If_0 = EXCLUDED.If_0,
 If_1 = EXCLUDED.If_1,
 If_2 = EXCLUDED.If_2,
