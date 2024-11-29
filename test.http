@@ -1,0 +1,2 @@
+POST http://localhost:8080/?resol=1Min
+Content-Type: application/json

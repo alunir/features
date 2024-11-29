@@ -1,5 +1,5 @@
 services:
-  prefect:
+  etl:
     build:
       context: .
       args:
@@ -9,6 +9,8 @@ services:
     environment:
       - LOG_LEVEL=info
       # - PREFECT_LOGGING_LEVEL=DEBUG
+    ports:
+      - "8080:8080"
     env_file:
       - .env
     working_dir: /usr/src/app

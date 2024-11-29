@@ -77,36 +77,7 @@ class InstrumentPair(BaseModel):
 
 InstrumentUnion = Instrument | InstrumentPair
 
-instruments = [
-                # InstrumentPair(
-                #     Primary=Instrument(ID=1, Name="BINANCE_BTCUSDT"),
-                #     Secondary=Instrument(ID=2, Name="BINANCE_BTCUSDT.P")
-                # ),
-                # InstrumentPair(
-                #     Primary=Instrument(ID=3, Name="BINANCE_ETHUSDT"),
-                #     Secondary=Instrument(ID=4, Name="BINANCE_ETHUSDT.P")
-                # ),
-                # InstrumentPair(
-                #     Primary=Instrument(ID=5, Name="BYBIT_BTCUSDT"),
-                #     Secondary=Instrument(ID=6, Name="BYBIT_BTCUSDT.P")
-                # ),
-                # InstrumentPair(
-                #     Primary=Instrument(ID=7, Name="BYBIT_ETHUSDT"),
-                #     Secondary=Instrument(ID=8, Name="BYBIT_ETHUSDT.P")
-                # ),
-                Instrument(ID=9, Name="TVC_US02Y"),
-                # Instrument(ID=10, Name="TVC_US10Y"),
-                # Instrument(ID=11, Name="TVC_USOIL"),
-                # Instrument(ID=12, Name="TVC_VIX"),
-                # Instrument(ID=13, Name="TVC_GOLD"),
-                # Instrument(ID=14, Name="FXCM_SPX500"),
-                # Instrument(ID=15, Name="FXCM_US30"),
-                # Instrument(ID=16, Name="FXCM_USDJPY"),
-                # Instrument(ID=17, Name="FXCM_EURUSD"),
-            ]
 
-
-# 型注釈
 class Parameter(BaseModel):
     thresh: float
     fdim: float
@@ -132,10 +103,6 @@ backoff_ticks = 24 * 60 * 7
 
 # パラメータの例
 Parameters = Dict[Resolution, Parameter]  # パラメータのリスト
-
-params: Parameters = {resol: Parameter(
-    fdim=fdim, max_imfs=max_imfs, thresh=thresh, backoff_ticks=backoff_ticks
-) for resol in resolutions}
 
 
 def OHLCV_from_df(instrument_id: int, df: pd.DataFrame) -> List[OHLCV]:
@@ -258,7 +225,7 @@ def PremiumIndex_from_df(instrument_id1: int, instrument_id2: int, resolution: R
 
 
 @task(log_prints=True)
-def ohlcvt_stream_task(pg, inst: Instrument, backoff_ticks: int):
+def ohlcvt_stream_task(pg, resolution: Resolution, inst: Instrument, backoff_ticks: int):
     logger = get_run_logger()
     
     client = pymkts.Client(endpoint=f"http://{marketstore_url}:5993/rpc")
@@ -289,9 +256,7 @@ def ohlcvt_stream_task(pg, inst: Instrument, backoff_ticks: int):
 
 
 @task(log_prints=True)
-def ffd_stream_task(pg, instrument_id: int, parameter: Parameter, df: pd.DataFrame, thresh: float):
-    resolution, fdim = parameter
-    
+def ffd_stream_task(pg, resolution: Resolution, instrument_id: int, p: Parameter, df: pd.DataFrame):
     df = df.resample(f"{resolution.value}s").agg(
         {
             "Open": "first",
@@ -303,39 +268,36 @@ def ffd_stream_task(pg, instrument_id: int, parameter: Parameter, df: pd.DataFra
         }
     )
     
-    ffd_df = frac_diff_ffd(df[columns], fdim, thresh)
-    data = FFD_from_df(instrument_id, resolution, fdim, ffd_df)
+    ffd_df = frac_diff_ffd(df[columns], p.fdim, p.thresh)
+    data = FFD_from_df(instrument_id, resolution, p.fdim, ffd_df)
     pg.send(data, "ffd")
     return ffd_df
 
 
 @task(log_prints=True)
-def emd_stream_task(pg, instrument_id: int, parameter: Parameter, ffd_df: pd.DataFrame, max_imfs: int):
-    resolution, fdim = parameter
+def emd_stream_task(pg, resolution: Resolution, instrument_id: int, p: Parameter, ffd_df: pd.DataFrame):
     emd_df = pd.DataFrame({}, index=ffd_df.index)
 
-    imfs = emd.sift.sift(ffd_df["Close"].values, max_imfs=max_imfs)
+    imfs = emd.sift.sift(ffd_df["Close"].values, max_imfs=p.max_imfs)
     # imfnum = min(imfs.shape[1], max_imfs)
 
     sample_rate = len(ffd_df.index)/((ffd_df.index[-1] - ffd_df.index[0]).seconds)
     IP, IF, IA = emd.spectra.frequency_transform(imfs, sample_rate, 'nht')
 
-    for i in range(0, max_imfs):
+    for i in range(0, p.max_imfs):
         emd_df[f"ip_{i}"] = IP[:, i] if IP.shape[1] > i else None  # Instantaneous Power
         emd_df[f"if_{i}"] = IF[:, i] if IF.shape[1] > i else None  # Instantaneous Frequency
         emd_df[f"ia_{i}"] = IA[:, i] if IA.shape[1] > i else None  # Instantaneous Amplitude
 
-    data = EMD_from_df(instrument_id, resolution, fdim, emd_df)
+    data = EMD_from_df(instrument_id, resolution, p.fdim, emd_df)
     pg.send(data, "emd")
     return emd_df
 
 
 @task(log_prints=True)
-def premium_index_stream_task(pg, inst_pair: InstrumentPair, parameter: Parameter, primary_df: pd.DataFrame, secondary_df: pd.DataFrame):
+def premium_index_stream_task(pg, inst_pair: InstrumentPair, resolution: Resolution, primary_df: pd.DataFrame, secondary_df: pd.DataFrame):
     logger = get_run_logger()
     try:
-        logger.info("Start checking pair")
-        
         if not inst_pair.Secondary.Name.startswith(inst_pair.Primary.Name):
             logger.warning(f"Invalid pair: {inst_pair.Primary.Name} and {inst_pair.Secondary.Name}")
             return
@@ -347,10 +309,6 @@ def premium_index_stream_task(pg, inst_pair: InstrumentPair, parameter: Paramete
             logger.warning("Primary or secondary DataFrame is empty")
             return
 
-        logger.info("Start calculating premium_index")
-        resolution, _ = parameter
-        
-        logger.info("Start resampling")
         primary_df = primary_df.resample(f"{resolution.value}s").agg(
             {
                 "Open": "first",
@@ -374,13 +332,9 @@ def premium_index_stream_task(pg, inst_pair: InstrumentPair, parameter: Paramete
         
         premium_index = (secondary_df["Close"] - primary_df["Close"]) / primary_df["Close"].replace(0, float('nan')) * 100
         premium_index = premium_index.dropna()
-        logger.info("premium_index is calculated")
         df = pd.DataFrame(premium_index, index=primary_df.index, columns=["premium_index"])
-        logger.info("premium_index is converted to DataFrame")
         data = PremiumIndex_from_df(inst_pair.Primary.ID, inst_pair.Secondary.ID, resolution, df)
-        logger.info("premium_index is converted to PremiumIndex")
         pg.send(data, "premium_index")
-        logger.info("premium_index is sent to Postgres")
         return
     except Exception as e:
         logger.error(traceback.format_exc())
@@ -388,14 +342,14 @@ def premium_index_stream_task(pg, inst_pair: InstrumentPair, parameter: Paramete
 
 
 @flow(log_prints=True)
-def calc_features_flow(parameter: Parameter, df: pd.DataFrame, pg, instrument_id: int, thresh: float, max_imfs: int):
-    ffd_df = ffd_stream_task(pg=pg, instrument_id=instrument_id, parameter=parameter, df=df, thresh=thresh)
-    emd_df = emd_stream_task(pg=pg, instrument_id=instrument_id, parameter=parameter, ffd_df=ffd_df, max_imfs=max_imfs)
+def calc_features_flow(pg, p: Parameter, resolution: Resolution, df: pd.DataFrame, instrument_id: int):
+    ffd_df = ffd_stream_task(pg, resolution, instrument_id, p, df)
+    emd_df = emd_stream_task(pg, resolution, instrument_id, p, ffd_df)
     return emd_df
 
 
 @flow(log_prints=True)
-def etl_flow(instruments: List[InstrumentUnion], p: Parameter):
+def etl_flow(resolution: Resolution, instruments: List[InstrumentUnion], p: Parameter):
     logger = get_run_logger()
     
     pg = Connection()
@@ -405,15 +359,15 @@ def etl_flow(instruments: List[InstrumentUnion], p: Parameter):
     tasks = []
     for inst in instruments:
         if isinstance(inst, Instrument):
-            df_task = ohlcvt_stream_task(pg=pg, inst=inst, backoff_ticks=backoff_ticks)
-            tasks += [ calc_features_flow(parameter=p, df=df_task, pg=pg, instrument_id=inst.ID) ]
+            df_task = ohlcvt_stream_task(pg, resolution, inst, backoff_ticks)
+            tasks += [ calc_features_flow(pg, p, resolution, df_task, inst.ID) ]
         elif isinstance(inst, InstrumentPair):
-            primary_task = ohlcvt_stream_task(pg=pg, inst=inst.Primary, backoff_ticks=backoff_ticks)
-            secondary_task = ohlcvt_stream_task(pg=pg, inst=inst.Secondary, backoff_ticks=backoff_ticks)
+            primary_task = ohlcvt_stream_task(pg, resolution, inst.Primary, backoff_ticks)
+            secondary_task = ohlcvt_stream_task(pg, resolution, inst.Secondary, backoff_ticks)
             tasks += [
-                calc_features_flow(parameter=p, df=primary_task, pg=pg, instrument_id=inst.Primary.ID),
-                calc_features_flow(parameter=p, df=secondary_task, pg=pg, instrument_id=inst.Secondary.ID),
-                premium_index_stream_task(pg=pg, inst_pair=inst, parameter=p, primary_df=primary_task, secondary_df=secondary_task)
+                calc_features_flow(pg, p, resolution, primary_task, inst.Primary.ID),
+                calc_features_flow(pg, p, resolution, secondary_task, inst.Secondary.ID),
+                premium_index_stream_task(pg, inst, resolution, primary_task, secondary_task)
             ]
         else:
             logger.warning(f"Invalid type: {type(inst)}")
@@ -421,12 +375,46 @@ def etl_flow(instruments: List[InstrumentUnion], p: Parameter):
     logger.info("Updated for all instruments")
 
 
-@app.get("/")
+@app.post("/")
 def root(resol: str):
     resolution = Resolution.from_string(resol)
+    
+    instruments = [
+                InstrumentPair(
+                    Primary=Instrument(ID=1, Name="BINANCE_BTCUSDT"),
+                    Secondary=Instrument(ID=2, Name="BINANCE_BTCUSDT.P")
+                ),
+                InstrumentPair(
+                    Primary=Instrument(ID=3, Name="BINANCE_ETHUSDT"),
+                    Secondary=Instrument(ID=4, Name="BINANCE_ETHUSDT.P")
+                ),
+                InstrumentPair(
+                    Primary=Instrument(ID=5, Name="BYBIT_BTCUSDT"),
+                    Secondary=Instrument(ID=6, Name="BYBIT_BTCUSDT.P")
+                ),
+                InstrumentPair(
+                    Primary=Instrument(ID=7, Name="BYBIT_ETHUSDT"),
+                    Secondary=Instrument(ID=8, Name="BYBIT_ETHUSDT.P")
+                ),
+                Instrument(ID=9, Name="TVC_US02Y"),
+                Instrument(ID=10, Name="TVC_US10Y"),
+                Instrument(ID=11, Name="TVC_USOIL"),
+                Instrument(ID=12, Name="TVC_VIX"),
+                Instrument(ID=13, Name="TVC_GOLD"),
+                Instrument(ID=14, Name="FXCM_SPX500"),
+                Instrument(ID=15, Name="FXCM_US30"),
+                Instrument(ID=16, Name="FXCM_USDJPY"),
+                Instrument(ID=17, Name="FXCM_EURUSD"),
+            ]
+
+    params: Parameters = {resol: Parameter(
+        fdim=fdim, max_imfs=max_imfs, thresh=thresh, backoff_ticks=backoff_ticks
+    ) for resol in resolutions}
+
     etl_flow(
-        name="etl-flow",
-        parameters={"instruments": instruments, "params": params[resolution]},
+        resolution,
+        instruments,
+        params[resolution],
     )
 
 
