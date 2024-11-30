@@ -7,7 +7,7 @@ from enum import Enum
 
 import uvicorn
 from fastapi import FastAPI
-from typing import List, Dict
+from typing import List, Dict, Optional
 from pydantic import BaseModel
 from util.types import OHLCV, FFD, EMD, PremiumIndex
 from util.pg_sync import Connection
@@ -22,6 +22,7 @@ from mlfinlab.features.fracdiff import frac_diff_ffd
 
 marketstore_url = os.environ.get("MARKETSTORE_URL", None)
 
+# TODO: remove Volume, Trades from columns
 columns = ["Open", "High", "Low", "Close", "Volume", "Trades"]
 
 app = FastAPI()
@@ -83,6 +84,10 @@ InstrumentUnion = Instrument | InstrumentPair
 class Request(BaseModel):
     resolution: str
     inst: List[InstrumentUnion]
+    thresh: Optional[float]
+    fdim: Optional[float]
+    max_imfs: Optional[int]
+    backoff_ticks: Optional[int]
 
 
 class Parameter(BaseModel):
@@ -103,10 +108,14 @@ resolutions: List[Resolution] = [
     Resolution.OneDay,
 ]
 
-thresh = float(os.getenv("THRESH", 1e-4))
-fdim = float(os.getenv("FDIM", 0.3))
-max_imfs = int(os.getenv("MAX_IMFS", 16))
-backoff_ticks = int(os.getenv("BACKOFF_TICKS", 24 * 60 * 7))   # 1 week
+# デフォルトのパラメータ
+DEFAULT_PARAMETERS = {
+    "thresh": 1e-4,
+    "fdim": 0.3,
+    "max_imfs": 16,
+    "backoff_ticks": 24 * 60 * 7,  # 1 week
+}
+
 
 # パラメータの例
 Parameters = Dict[Resolution, Parameter]  # パラメータのリスト
@@ -369,7 +378,7 @@ def premium_index_stream_task(pg, inst_pair: InstrumentPair, resolution: Resolut
 
 
 @task(log_prints=True)
-def calc_features_flow(pg, p: Parameter, resolution: Resolution, df: pd.DataFrame, instrument_id: int):
+def calc_features_task(pg, p: Parameter, resolution: Resolution, df: pd.DataFrame, instrument_id: int):
     ffd_df = ffd_stream_task.submit(pg, resolution, instrument_id, p, df)
     emd_df = emd_stream_task.submit(pg, resolution, instrument_id, p, ffd_df)
     return emd_df
@@ -385,14 +394,14 @@ def etl_flow(resolution: Resolution, inst: InstrumentUnion, p: Parameter):
     
     tasks = []
     if isinstance(inst, Instrument):
-        df_task = ohlcvt_stream_task.submit(pg, resolution, inst, backoff_ticks)
-        feature_task = calc_features_flow.submit(pg, p, resolution, df_task.result(), inst.ID)
+        df_task = ohlcvt_stream_task.submit(pg, resolution, inst, p.backoff_ticks)
+        feature_task = calc_features_task.submit(pg, p, resolution, df_task.result(), inst.ID)
         tasks.append(feature_task)
     elif isinstance(inst, InstrumentPair):
-        primary_task = ohlcvt_stream_task.submit(pg, resolution, inst.Primary, backoff_ticks)
-        secondary_task = ohlcvt_stream_task.submit(pg, resolution, inst.Secondary, backoff_ticks)
-        feature_task_primary = calc_features_flow.submit(pg, p, resolution, primary_task.result(), inst.Primary.ID)
-        feature_task_secondary = calc_features_flow.submit(pg, p, resolution, secondary_task.result(), inst.Secondary.ID)
+        primary_task = ohlcvt_stream_task.submit(pg, resolution, inst.Primary, p.backoff_ticks)
+        secondary_task = ohlcvt_stream_task.submit(pg, resolution, inst.Secondary, p.backoff_ticks)
+        feature_task_primary = calc_features_task.submit(pg, p, resolution, primary_task.result(), inst.Primary.ID)
+        feature_task_secondary = calc_features_task.submit(pg, p, resolution, secondary_task.result(), inst.Secondary.ID)
         premium_task = premium_index_stream_task.submit(pg, inst, resolution, primary_task.result(), secondary_task.result())
         tasks.extend([feature_task_primary, feature_task_secondary, premium_task])
     else:
@@ -420,6 +429,11 @@ def root(req: Request):
             Primary=req.inst[0],
             Secondary=req.inst[1]
         )
+
+    thresh = DEFAULT_PARAMETERS["thresh"] if req.thresh is None else req.thresh
+    max_imfs = DEFAULT_PARAMETERS["max_imfs"] if req.max_imfs is None else req.max_imfs
+    fdim = DEFAULT_PARAMETERS["fdim"] if req.fdim is None else req.fdim
+    backoff_ticks = DEFAULT_PARAMETERS["backoff_ticks"] if req.backoff_ticks is None else req.backoff_ticks
 
     params: Parameters = {resol: Parameter(
         fdim=fdim, max_imfs=max_imfs, thresh=thresh, backoff_ticks=backoff_ticks

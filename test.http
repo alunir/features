@@ -31,6 +31,24 @@ Content-Type: application/json
 }
 
 ###
+POST https://features-146867990133.asia-northeast1.run.app/
+Content-Type: application/json
+
+{
+    "resolution": "1Min",
+    "inst": [
+        {
+            "ID": 1,
+            "Name": "BINANCE_BTCUSDT"
+        },
+        {
+            "ID": 2,
+            "Name": "BINANCE_BTCUSDT.P"
+        }
+    ]
+}
+
+###
 
 # instruments = [
 #             InstrumentPair(
