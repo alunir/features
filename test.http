@@ -8,7 +8,8 @@ Content-Type: application/json
             "ID": 13,
             "Name": "TVC_GOLD"
         }
-    ]
+    ],
+    "backoff_ticks": 10080
 }
 
 
@@ -45,7 +46,290 @@ Content-Type: application/json
             "ID": 2,
             "Name": "BINANCE_BTCUSDT.P"
         }
-    ]
+    ],
+    "backoff_ticks": 10080
+}
+
+###
+POST https://features-146867990133.asia-northeast1.run.app/
+Content-Type: application/json
+
+{
+    "resolution": "1Min",
+    "backoff_ticks": 10080
+    "inst": [
+        {
+            "ID": 3,
+            "Name": "BINANCE_ETHUSDT"
+        },
+        {
+            "ID": 4,
+            "Name": "BINANCE_ETHUSDT.P"
+        }
+    ],
+}
+
+###
+POST https://features-146867990133.asia-northeast1.run.app/
+Content-Type: application/json
+
+{
+    "resolution": "1Min",
+    "backoff_ticks": 10080
+    "inst": [
+        {
+            "ID": 5,
+            "Name": "BYBIT_BTCUSDT"
+        },
+        {
+            "ID": 6,
+            "Name": "BYBIT_BTCUSDT.P"
+        }
+    ],
+}
+
+###
+POST https://features-146867990133.asia-northeast1.run.app/
+Content-Type: application/json
+
+{
+    "resolution": "1Min",
+    "backoff_ticks": 10080
+    "inst": [
+        {
+            "ID": 7,
+            "Name": "BYBIT_ETHUSDT"
+        },
+        {
+            "ID": 8,
+            "Name": "BYBIT_ETHUSDT.P"
+        }
+    ],
+}
+
+###
+POST https://features-146867990133.asia-northeast1.run.app/
+Content-Type: application/json
+
+{
+    "resolution": "1Min",
+    "backoff_ticks": 10080
+    "inst": [
+        {
+            "ID": 9,
+            "Name": "TVC_US02Y"
+        }
+    ],
+}
+
+###
+POST https://features-146867990133.asia-northeast1.run.app/
+Content-Type: application/json
+
+{
+    "resolution": "1Min",
+    "backoff_ticks": 10080
+    "inst": [
+        {
+            "ID": 10,
+            "Name": "TVC_US10Y"
+        }
+    ],
+}
+
+###
+POST https://features-146867990133.asia-northeast1.run.app/
+Content-Type: application/json
+
+{
+    "resolution": "1Min",
+    "backoff_ticks": 10080
+    "inst": [
+        {
+            "ID": 11,
+            "Name": "TVC_USOIL"
+        }
+    ],
+}
+
+###
+POST https://features-146867990133.asia-northeast1.run.app/
+Content-Type: application/json
+
+{
+    "resolution": "1Min",
+    "backoff_ticks": 10080
+    "inst": [
+        {
+            "ID": 12,
+            "Name": "TVC_VIX"
+        }
+    ],
+}
+
+###
+POST https://features-146867990133.asia-northeast1.run.app/
+Content-Type: application/json
+
+{
+    "resolution": "1Min",
+    "backoff_ticks": 10080
+    "inst": [
+        {
+            "ID": 13,
+            "Name": "TVC_GOLD"
+        }
+    ],
+}
+
+###
+POST https://features-146867990133.asia-northeast1.run.app/
+Content-Type: application/json
+
+{
+    "resolution": "1Min",
+    "backoff_ticks": 10080
+    "inst": [
+        {
+            "ID": 14,
+            "Name": "TVC_SPX"
+        }
+    ],
+}
+
+###
+POST https://features-146867990133.asia-northeast1.run.app/
+Content-Type: application/json
+
+{
+    "resolution": "1Min",
+    "backoff_ticks": 10080
+    "inst": [
+        {
+            "ID": 15,
+            "Name": "TVC_DJI"
+        }
+    ],
+}
+
+###
+POST https://features-146867990133.asia-northeast1.run.app/
+Content-Type: application/json
+
+{
+    "resolution": "1Min",
+    "backoff_ticks": 10080
+    "inst": [
+        {
+            "ID": 16,
+            "Name": "TVC_NDQ"
+        }
+    ],
+}
+
+###
+POST https://features-146867990133.asia-northeast1.run.app/
+Content-Type: application/json
+
+{
+    "resolution": "1Min",
+    "backoff_ticks": 10080
+    "inst": [
+        {
+            "ID": 17,
+            "Name": "TVC_DXY"
+        }
+    ],
+}
+
+###
+POST https://features-146867990133.asia-northeast1.run.app/
+Content-Type: application/json
+
+{
+    "resolution": "1Min",
+    "backoff_ticks": 10080
+    "inst": [
+        {
+            "ID": 18,
+            "Name": "TVC_US30Y"
+        }
+    ],
+}
+
+###
+POST https://features-146867990133.asia-northeast1.run.app/
+Content-Type: application/json
+
+{
+    "resolution": "1Min",
+    "backoff_ticks": 10080
+    "inst": [
+        {
+            "ID": 19,
+            "Name": "TVC_NI225"
+        }
+    ],
+}
+
+###
+POST https://features-146867990133.asia-northeast1.run.app/
+Content-Type: application/json
+
+{
+    "resolution": "1Min",
+    "backoff_ticks": 10080
+    "inst": [
+        {
+            "ID": 20,
+            "Name": "FXCM_USDJPY"
+        }
+    ],
+}
+
+###
+POST https://features-146867990133.asia-northeast1.run.app/
+Content-Type: application/json
+
+{
+    "resolution": "1Min",
+    "backoff_ticks": 10080
+    "inst": [
+        {
+            "ID": 21,
+            "Name": "FXCM_EURUSD"
+        }
+    ],
+}
+
+###
+POST https://features-146867990133.asia-northeast1.run.app/
+Content-Type: application/json
+
+{
+    "resolution": "1Min",
+    "backoff_ticks": 10080
+    "inst": [
+        {
+            "ID": 22,
+            "Name": "FXCM_GBPUSD"
+        }
+    ],
+}
+
+###
+POST https://features-146867990133.asia-northeast1.run.app/
+Content-Type: application/json
+
+{
+    "resolution": "1Min",
+    "backoff_ticks": 10080
+    "inst": [
+        {
+            "ID": 23,
+            "Name": "FXCM_US2000"
+        }
+    ],
 }
 
 ###

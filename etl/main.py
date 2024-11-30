@@ -84,10 +84,10 @@ InstrumentUnion = Instrument | InstrumentPair
 class Request(BaseModel):
     resolution: str
     inst: List[InstrumentUnion]
-    thresh: Optional[float]
-    fdim: Optional[float]
-    max_imfs: Optional[int]
-    backoff_ticks: Optional[int]
+    thresh: Optional[float] = None
+    fdim: Optional[float] = None
+    max_imfs: Optional[int] = None
+    backoff_ticks: Optional[int] = None
 
 
 class Parameter(BaseModel):

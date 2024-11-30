@@ -19,4 +19,5 @@ CREATE INDEX IF NOT EXISTS idx_instrument_resolution_fdim_epoch_desc ON ffd (Ins
 
 
 -- +goose Down
-DROP TABLE IF EXISTS feature_ffd;
+DROP TABLE IF EXISTS ffd;
+DROP TYPE IF EXISTS RESOLUTION;
