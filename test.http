@@ -2,5 +2,66 @@ POST http://localhost:8080/
 Content-Type: application/json
 
 {
-    "resolution": "1Min"
+    "resolution": "1Min",
+    "inst": [
+        {
+            "ID": 13,
+            "Name": "TVC_GOLD"
+        }
+    ]
 }
+
+
+###
+POST http://localhost:8080/
+Content-Type: application/json
+
+{
+    "resolution": "1Min",
+    "inst": [
+        {
+            "ID": 1,
+            "Name": "BINANCE_BTCUSDT"
+        },
+        {
+            "ID": 2,
+            "Name": "BINANCE_BTCUSDT.P"
+        }
+    ]
+}
+
+###
+
+# instruments = [
+#             InstrumentPair(
+#                 Primary=Instrument(ID=1, Name="BINANCE_BTCUSDT"),
+#                 Secondary=Instrument(ID=2, Name="BINANCE_BTCUSDT.P")
+#             ),
+#             InstrumentPair(
+#                 Primary=Instrument(ID=3, Name="BINANCE_ETHUSDT"),
+#                 Secondary=Instrument(ID=4, Name="BINANCE_ETHUSDT.P")
+#             ),
+#             InstrumentPair(
+#                 Primary=Instrument(ID=5, Name="BYBIT_BTCUSDT"),
+#                 Secondary=Instrument(ID=6, Name="BYBIT_BTCUSDT.P")
+#             ),
+#             InstrumentPair(
+#                 Primary=Instrument(ID=7, Name="BYBIT_ETHUSDT"),
+#                 Secondary=Instrument(ID=8, Name="BYBIT_ETHUSDT.P")
+#             ),
+#             Instrument(ID=9, Name="TVC_US02Y"),
+#             Instrument(ID=10, Name="TVC_US10Y"),
+#             Instrument(ID=11, Name="TVC_USOIL"),
+#             Instrument(ID=12, Name="TVC_VIX"),
+#             Instrument(ID=13, Name="TVC_GOLD"),
+#             Instrument(ID=14, Name="TVC_SPX"),
+#             Instrument(ID=15, Name="TVC_DJI"),
+#             Instrument(ID=16, Name="TVC_NDQ"),
+#             Instrument(ID=17, Name="TVC_DXY"),
+#             Instrument(ID=18, Name="TVC_US30Y"),
+#             Instrument(ID=19, Name="TVC_NI225"),
+#             Instrument(ID=20, Name="FXCM_USDJPY"),
+#             Instrument(ID=21, Name="FXCM_EURUSD"),
+#             Instrument(ID=22, Name="FXCM_GBPUSD"),
+#             Instrument(ID=23, Name="FXCM_US2000"),
+#         ]

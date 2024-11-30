@@ -1,5 +1,6 @@
 import os
 import emd
+import time
 import traceback
 import pandas as pd
 from enum import Enum
@@ -13,13 +14,10 @@ from util.pg_sync import Connection
 import pymarketstore as pymkts
 
 from prefect import flow, task, get_run_logger
+from prefect.task_runners import ConcurrentTaskRunner
 from prefect.futures import wait
 from prefect.utilities.annotations import quote
 from mlfinlab.features.fracdiff import frac_diff_ffd
-
-
-class Request(BaseModel):
-    resolution: str
 
 
 marketstore_url = os.environ.get("MARKETSTORE_URL", None)
@@ -80,6 +78,11 @@ class InstrumentPair(BaseModel):
 
 
 InstrumentUnion = Instrument | InstrumentPair
+
+
+class Request(BaseModel):
+    resolution: str
+    inst: List[InstrumentUnion]
 
 
 class Parameter(BaseModel):
@@ -250,7 +253,7 @@ def ohlcvt_stream_task(pg, resolution: Resolution, inst: Instrument, backoff_tic
     
     client = pymkts.Client(endpoint=f"http://{marketstore_url}:5993/rpc")
 
-    logger.info("Connected to marketstore")
+    logger.info(f"Connected to marketstore for {inst} at {resolution}")
 
     try:
         param = pymkts.Params(
@@ -365,15 +368,15 @@ def premium_index_stream_task(pg, inst_pair: InstrumentPair, resolution: Resolut
         raise e
 
 
-@flow(log_prints=True)
+@task(log_prints=True)
 def calc_features_flow(pg, p: Parameter, resolution: Resolution, df: pd.DataFrame, instrument_id: int):
-    ffd_df = ffd_stream_task(pg, resolution, instrument_id, p, df)
-    emd_df = emd_stream_task(pg, resolution, instrument_id, p, ffd_df)
+    ffd_df = ffd_stream_task.submit(pg, resolution, instrument_id, p, df)
+    emd_df = emd_stream_task.submit(pg, resolution, instrument_id, p, ffd_df)
     return emd_df
 
 
-@flow(log_prints=True)
-def etl_flow(resolution: Resolution, instruments: List[InstrumentUnion], p: Parameter):
+@flow(log_prints=True, task_runner=ConcurrentTaskRunner())
+def etl_flow(resolution: Resolution, inst: InstrumentUnion, p: Parameter):
     logger = get_run_logger()
     
     pg = Connection()
@@ -381,55 +384,42 @@ def etl_flow(resolution: Resolution, instruments: List[InstrumentUnion], p: Para
     logger.info("Connected to Postgres")
     
     tasks = []
-    for inst in instruments:
-        if isinstance(inst, Instrument):
-            df_task = ohlcvt_stream_task(pg, resolution, inst, backoff_ticks)
-            tasks += [ calc_features_flow(pg, p, resolution, df_task, inst.ID) ]
-        elif isinstance(inst, InstrumentPair):
-            primary_task = ohlcvt_stream_task(pg, resolution, inst.Primary, backoff_ticks)
-            secondary_task = ohlcvt_stream_task(pg, resolution, inst.Secondary, backoff_ticks)
-            tasks += [
-                calc_features_flow(pg, p, resolution, primary_task, inst.Primary.ID),
-                calc_features_flow(pg, p, resolution, secondary_task, inst.Secondary.ID),
-                premium_index_stream_task(pg, inst, resolution, primary_task, secondary_task)
-            ]
-        else:
-            logger.warning(f"Invalid type: {type(inst)}")
-    # wait(tasks)
+    if isinstance(inst, Instrument):
+        df_task = ohlcvt_stream_task.submit(pg, resolution, inst, backoff_ticks)
+        feature_task = calc_features_flow.submit(pg, p, resolution, df_task.result(), inst.ID)
+        tasks.append(feature_task)
+    elif isinstance(inst, InstrumentPair):
+        primary_task = ohlcvt_stream_task.submit(pg, resolution, inst.Primary, backoff_ticks)
+        secondary_task = ohlcvt_stream_task.submit(pg, resolution, inst.Secondary, backoff_ticks)
+        feature_task_primary = calc_features_flow.submit(pg, p, resolution, primary_task.result(), inst.Primary.ID)
+        feature_task_secondary = calc_features_flow.submit(pg, p, resolution, secondary_task.result(), inst.Secondary.ID)
+        premium_task = premium_index_stream_task.submit(pg, inst, resolution, primary_task.result(), secondary_task.result())
+        tasks.extend([feature_task_primary, feature_task_secondary, premium_task])
+    else:
+        logger.warning(f"Invalid type: {type(inst)}")
+    wait(tasks)
     logger.info("Updated for all instruments")
 
 
 @app.post("/")
 def root(req: Request):
+    start = time.time()
+    
     resolution = Resolution.from_string(req.resolution)
     
-    instruments = [
-                InstrumentPair(
-                    Primary=Instrument(ID=1, Name="BINANCE_BTCUSDT"),
-                    Secondary=Instrument(ID=2, Name="BINANCE_BTCUSDT.P")
-                ),
-                InstrumentPair(
-                    Primary=Instrument(ID=3, Name="BINANCE_ETHUSDT"),
-                    Secondary=Instrument(ID=4, Name="BINANCE_ETHUSDT.P")
-                ),
-                InstrumentPair(
-                    Primary=Instrument(ID=5, Name="BYBIT_BTCUSDT"),
-                    Secondary=Instrument(ID=6, Name="BYBIT_BTCUSDT.P")
-                ),
-                InstrumentPair(
-                    Primary=Instrument(ID=7, Name="BYBIT_ETHUSDT"),
-                    Secondary=Instrument(ID=8, Name="BYBIT_ETHUSDT.P")
-                ),
-                Instrument(ID=9, Name="TVC_US02Y"),
-                Instrument(ID=10, Name="TVC_US10Y"),
-                Instrument(ID=11, Name="TVC_USOIL"),
-                Instrument(ID=12, Name="TVC_VIX"),
-                Instrument(ID=13, Name="TVC_GOLD"),
-                Instrument(ID=14, Name="FXCM_SPX500"),
-                Instrument(ID=15, Name="FXCM_US30"),
-                Instrument(ID=16, Name="FXCM_USDJPY"),
-                Instrument(ID=17, Name="FXCM_EURUSD"),
-            ]
+    if req.inst is None:
+        return {"message": "No 'inst' in request"}
+    if len(req.inst) == 0:
+        return {"message": "No instruments"}
+    if len(req.inst) > 2:
+        return {"message": "Too many instruments"}
+    if len(req.inst) == 1:
+        inst = req.inst[0]
+    if len(req.inst) == 2:
+        inst = InstrumentPair(
+            Primary=req.inst[0],
+            Secondary=req.inst[1]
+        )
 
     params: Parameters = {resol: Parameter(
         fdim=fdim, max_imfs=max_imfs, thresh=thresh, backoff_ticks=backoff_ticks
@@ -437,9 +427,18 @@ def root(req: Request):
 
     etl_flow(
         resolution,
-        instruments,
+        inst,
         params[resolution],
     )
+    
+    end_time = time.time()
+
+    return {
+        "message": "Success",
+        "resolution": resolution,
+        "inst": inst,
+        "elapsed_time": end_time - start,
+    }
 
 
 if __name__ == "__main__":
