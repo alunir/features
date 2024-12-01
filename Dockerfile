@@ -21,4 +21,7 @@ RUN prefect cloud login --key ${PREFECT_API_KEY} --workspace ${PREFECT_WORKSPACE
 
 COPY ./etl /usr/src/app
 
+# Prefect ログレベルを設定
+ENV PREFECT_LOGGING_LEVEL=DEBUG
+
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]

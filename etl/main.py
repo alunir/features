@@ -266,10 +266,17 @@ def ohlcvt_stream_task(pg, resolution: Resolution, inst: Instrument, backoff_tic
 
     try:
         param = pymkts.Params(
-            inst.Name, resolution.to_string(), "OHLCV", limit=backoff_ticks
+            inst.Name, "1Min", "OHLCV", limit=backoff_ticks * resolution.value / 60
         )
         reply = client.query(param)
-        df = reply.first().df()
+        df = reply.first().df().resample(f"{resolution.value}s").agg({
+            "Open": "first",
+            "High": "max",
+            "Low": "min",
+            "Close": "last",
+            "Volume": "sum",
+            "Trades": "sum",
+        })
         
         assert len(df) > 0, "No data retrieved"
         
@@ -300,7 +307,7 @@ def ffd_stream_task(pg, resolution: Resolution, instrument_id: int, p: Parameter
         }
     )
     
-    ffd_df = frac_diff_ffd(df[columns], p.fdim, p.thresh)
+    ffd_df = frac_diff_ffd(df[columns], p.fdim, p.thresh).dropna()
     data = FFD_from_df(instrument_id, resolution, p.fdim, ffd_df)
     pg.send(data, "ffd")
     return ffd_df
@@ -366,9 +373,8 @@ def premium_index_stream_task(pg, inst_pair: InstrumentPair, resolution: Resolut
             }
         )
         
-        premium_index = (secondary_df["Close"] - primary_df["Close"]) / primary_df["Close"].replace(0, float('nan')) * 100
-        premium_index = premium_index.dropna()
-        df = pd.DataFrame(premium_index, index=primary_df.index, columns=["premium_index"])
+        premium_index = (secondary_df["Close"] - primary_df["Close"]) / primary_df["Close"] * 100
+        df = premium_index.dropna().to_frame(name='premium_index')
         data = PremiumIndex_from_df(inst_pair.Primary.ID, inst_pair.Secondary.ID, resolution, df)
         pg.send(data, "premium_index")
         return
@@ -380,7 +386,7 @@ def premium_index_stream_task(pg, inst_pair: InstrumentPair, resolution: Resolut
 @task(log_prints=True)
 def calc_features_task(pg, p: Parameter, resolution: Resolution, df: pd.DataFrame, instrument_id: int):
     ffd_df = ffd_stream_task.submit(pg, resolution, instrument_id, p, df)
-    emd_df = emd_stream_task.submit(pg, resolution, instrument_id, p, ffd_df)
+    emd_df = emd_stream_task.submit(pg, resolution, instrument_id, p, ffd_df.result())
     return emd_df
 
 

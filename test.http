@@ -28,7 +28,8 @@ Content-Type: application/json
             "ID": 2,
             "Name": "BINANCE_BTCUSDT.P"
         }
-    ]
+    ],
+    "backoff_ticks": 10080
 }
 
 ###
