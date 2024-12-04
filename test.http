@@ -3,10 +3,11 @@ Content-Type: application/json
 
 {
     "resolution": "1Min",
+    "source": "postgres",
     "inst": [
         {
-            "ID": 13,
-            "Name": "TVC_GOLD"
+            "ID": 7,
+            "Name": "BYBIT_ETHUSDT"
         }
     ],
     "backoff_ticks": 10080
@@ -57,7 +58,7 @@ Content-Type: application/json
 
 {
     "resolution": "1Min",
-    "backoff_ticks": 10080
+    "backoff_ticks": 10080,
     "inst": [
         {
             "ID": 3,
@@ -67,7 +68,7 @@ Content-Type: application/json
             "ID": 4,
             "Name": "BINANCE_ETHUSDT.P"
         }
-    ],
+    ]
 }
 
 ###
@@ -76,7 +77,7 @@ Content-Type: application/json
 
 {
     "resolution": "1Min",
-    "backoff_ticks": 10080
+    "backoff_ticks": 10080,
     "inst": [
         {
             "ID": 5,
@@ -86,7 +87,7 @@ Content-Type: application/json
             "ID": 6,
             "Name": "BYBIT_BTCUSDT.P"
         }
-    ],
+    ]
 }
 
 ###
@@ -94,8 +95,8 @@ POST https://features-146867990133.asia-northeast1.run.app/
 Content-Type: application/json
 
 {
-    "resolution": "1Min",
-    "backoff_ticks": 10080
+    "resolution": "5Min",
+    "backoff_ticks": 517248,
     "inst": [
         {
             "ID": 7,
@@ -105,7 +106,7 @@ Content-Type: application/json
             "ID": 8,
             "Name": "BYBIT_ETHUSDT.P"
         }
-    ],
+    ]
 }
 
 ###
@@ -114,13 +115,13 @@ Content-Type: application/json
 
 {
     "resolution": "1Min",
-    "backoff_ticks": 10080
+    "backoff_ticks": 10080,
     "inst": [
         {
             "ID": 9,
             "Name": "TVC_US02Y"
         }
-    ],
+    ]
 }
 
 ###
@@ -129,13 +130,13 @@ Content-Type: application/json
 
 {
     "resolution": "1Min",
-    "backoff_ticks": 10080
+    "backoff_ticks": 10080,
     "inst": [
         {
             "ID": 10,
             "Name": "TVC_US10Y"
         }
-    ],
+    ]
 }
 
 ###
@@ -144,13 +145,13 @@ Content-Type: application/json
 
 {
     "resolution": "1Min",
-    "backoff_ticks": 10080
+    "backoff_ticks": 10080,
     "inst": [
         {
             "ID": 11,
             "Name": "TVC_USOIL"
         }
-    ],
+    ]
 }
 
 ###
@@ -159,13 +160,13 @@ Content-Type: application/json
 
 {
     "resolution": "1Min",
-    "backoff_ticks": 10080
+    "backoff_ticks": 10080,
     "inst": [
         {
             "ID": 12,
             "Name": "TVC_VIX"
         }
-    ],
+    ]
 }
 
 ###
@@ -174,13 +175,13 @@ Content-Type: application/json
 
 {
     "resolution": "1Min",
-    "backoff_ticks": 10080
+    "backoff_ticks": 10080,
     "inst": [
         {
             "ID": 13,
             "Name": "TVC_GOLD"
         }
-    ],
+    ]
 }
 
 ###
@@ -189,13 +190,13 @@ Content-Type: application/json
 
 {
     "resolution": "1Min",
-    "backoff_ticks": 10080
+    "backoff_ticks": 10080,
     "inst": [
         {
             "ID": 14,
             "Name": "TVC_SPX"
         }
-    ],
+    ]
 }
 
 ###
@@ -204,13 +205,13 @@ Content-Type: application/json
 
 {
     "resolution": "1Min",
-    "backoff_ticks": 10080
+    "backoff_ticks": 10080,
     "inst": [
         {
             "ID": 15,
             "Name": "TVC_DJI"
         }
-    ],
+    ]
 }
 
 ###
@@ -219,13 +220,13 @@ Content-Type: application/json
 
 {
     "resolution": "1Min",
-    "backoff_ticks": 10080
+    "backoff_ticks": 10080,
     "inst": [
         {
             "ID": 16,
             "Name": "TVC_NDQ"
         }
-    ],
+    ]
 }
 
 ###
@@ -234,13 +235,13 @@ Content-Type: application/json
 
 {
     "resolution": "1Min",
-    "backoff_ticks": 10080
+    "backoff_ticks": 10080,
     "inst": [
         {
             "ID": 17,
             "Name": "TVC_DXY"
         }
-    ],
+    ]
 }
 
 ###
@@ -249,13 +250,13 @@ Content-Type: application/json
 
 {
     "resolution": "1Min",
-    "backoff_ticks": 10080
+    "backoff_ticks": 10080,
     "inst": [
         {
             "ID": 18,
             "Name": "TVC_US30Y"
         }
-    ],
+    ]
 }
 
 ###
@@ -264,13 +265,13 @@ Content-Type: application/json
 
 {
     "resolution": "1Min",
-    "backoff_ticks": 10080
+    "backoff_ticks": 10080,
     "inst": [
         {
             "ID": 19,
             "Name": "TVC_NI225"
         }
-    ],
+    ]
 }
 
 ###
@@ -279,13 +280,13 @@ Content-Type: application/json
 
 {
     "resolution": "1Min",
-    "backoff_ticks": 10080
+    "backoff_ticks": 10080,
     "inst": [
         {
             "ID": 20,
             "Name": "FXCM_USDJPY"
         }
-    ],
+    ]
 }
 
 ###
@@ -294,13 +295,13 @@ Content-Type: application/json
 
 {
     "resolution": "1Min",
-    "backoff_ticks": 10080
+    "backoff_ticks": 10080,
     "inst": [
         {
             "ID": 21,
             "Name": "FXCM_EURUSD"
         }
-    ],
+    ]
 }
 
 ###
@@ -309,13 +310,13 @@ Content-Type: application/json
 
 {
     "resolution": "1Min",
-    "backoff_ticks": 10080
+    "backoff_ticks": 10080,
     "inst": [
         {
             "ID": 22,
             "Name": "FXCM_GBPUSD"
         }
-    ],
+    ]
 }
 
 ###
@@ -324,13 +325,13 @@ Content-Type: application/json
 
 {
     "resolution": "1Min",
-    "backoff_ticks": 10080
+    "backoff_ticks": 10080,
     "inst": [
         {
             "ID": 23,
             "Name": "FXCM_US2000"
         }
-    ],
+    ]
 }
 
 ###

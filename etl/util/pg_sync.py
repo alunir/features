@@ -249,14 +249,13 @@ class Connection:
                     f"SELECT * FROM {target} ORDER BY Epoch ASC LIMIT {limit}"
                 )
 
-    def fetch_all_by_inst_vpin(
-        self, target: str, instrument_id: str, vpin_id: str
+    def fetch_all_by_inst(
+        self, target: str, instrument_id: str
     ) -> List:
         """
         Fetches data from the Postgres database
         """
         with self.conn() as conn:
             with conn.cursor() as cursor:
-                return cursor.fetch(
-                    f"SELECT * FROM {target} WHERE instrument = {instrument_id} and vpin = {vpin_id} ORDER BY Epoch ASC"
-                )
+                cursor.execute(f"SELECT * FROM {target} WHERE instrument = {instrument_id} ORDER BY Epoch ASC;")
+                return cursor.fetchall()

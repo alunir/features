@@ -28,6 +28,11 @@ columns = ["Open", "High", "Low", "Close", "Volume", "Trades"]
 app = FastAPI()
 
 
+class OhlcvtSource(Enum):
+    MarketStore = "market_store"
+    Postgres = "postgres"
+
+
 # 解像度を表すEnumの定義
 class Resolution(Enum):
     # 秒数で解像度を定義
@@ -84,6 +89,7 @@ InstrumentUnion = Instrument | InstrumentPair
 class Request(BaseModel):
     resolution: str
     inst: List[InstrumentUnion]
+    source: Optional[OhlcvtSource] = OhlcvtSource.MarketStore
     thresh: Optional[float] = None
     fdim: Optional[float] = None
     max_imfs: Optional[int] = None
@@ -91,6 +97,7 @@ class Request(BaseModel):
 
 
 class Parameter(BaseModel):
+    ohlcvt_source: OhlcvtSource
     thresh: float
     fdim: float
     max_imfs: int
@@ -257,33 +264,62 @@ def PremiumIndex_from_df(instrument_id1: int, instrument_id2: int, resolution: R
 
 
 @task(log_prints=True)
-def ohlcvt_stream_task(pg, resolution: Resolution, inst: Instrument, backoff_ticks: int):
+def ohlcvt_stream_task(pg, resolution: Resolution, inst: Instrument, ohlcvt_source: OhlcvtSource, backoff_ticks: int):
     logger = get_run_logger()
     
-    client = pymkts.Client(endpoint=f"http://{marketstore_url}:5993/rpc")
-
-    logger.info(f"Connected to marketstore for {inst} at {resolution}")
-
     try:
-        param = pymkts.Params(
-            inst.Name, "1Min", "OHLCV", limit=backoff_ticks * resolution.value / 60
-        )
-        reply = client.query(param)
-        df = reply.first().df().resample(f"{resolution.value}s").agg({
-            "Open": "first",
-            "High": "max",
-            "Low": "min",
-            "Close": "last",
-            "Volume": "sum",
-            "Trades": "sum",
-        })
+        if ohlcvt_source == OhlcvtSource.MarketStore:
+            client = pymkts.Client(endpoint=f"http://{marketstore_url}:5993/rpc")
+
+            logger.info(f"Connected to marketstore for {inst} at {resolution}")
+
+            param = pymkts.Params(
+                inst.Name, "1Min", "OHLCV", limit=backoff_ticks * resolution.value / 60
+            )
+            reply = client.query(param)
+            df = reply.first().df().resample(f"{resolution.value}s").agg({
+                "Open": "first",
+                "High": "max",
+                "Low": "min",
+                "Close": "last",
+                "Volume": "sum",
+                "Trades": "sum",
+            })
+            
+            assert len(df) > 0, "No data retrieved"
+            
+            logger.info(f"Got {len(df)} rows")
+            data = OHLCV_from_df(inst.ID, df)
+            pg.send(data, "ohlcvt")
+            logger.info(f"Sent all records of {inst.Name} to Postgres")
         
-        assert len(df) > 0, "No data retrieved"
-        
-        logger.debug(f"Got {len(df)} rows")
-        data = OHLCV_from_df(inst.ID, df)
-        pg.send(data, "ohlcvt")
-        logger.info(f"Sent all records of {inst.Name} to Postgres")
+        elif ohlcvt_source == OhlcvtSource.Postgres:
+            data = pg.fetch_all_by_inst("ohlcvt", inst.ID)
+            assert len(data) > 0, "No data retrieved"
+            
+            columns = ['instrument_id', 'Epoch', 'Open', 'High', 'Low', 'Close', 'Volume', 'Trades']
+            # Convert to DataFrame
+            df = pd.DataFrame(data, columns=columns)
+            # Convert Decimal columns to float after creation
+            decimal_columns = ['Open', 'High', 'Low', 'Close', 'Volume']
+            for col in decimal_columns:
+                df[col] = df[col].apply(float)
+            # Set 'Epoch' as the index
+            df.set_index('Epoch', inplace=True)
+            
+            df = pd.DataFrame(df).resample(f"{resolution.value}s").agg({
+                "Open": "first",
+                "High": "max",
+                "Low": "min",
+                "Close": "last",
+                "Volume": "sum",
+                "Trades": "sum",
+            })
+            logger.info(f"Got {len(df)} rows")
+
+        else:
+            logger.warning(f"Invalid source: {ohlcvt_source}")
+            raise ValueError(f"Invalid source: {ohlcvt_source}")
 
         return df
 
@@ -325,8 +361,6 @@ def emd_stream_task(pg, resolution: Resolution, instrument_id: int, p: Parameter
     IP, IF, IA = emd.spectra.frequency_transform(imfs, sample_rate, 'nht')
 
     for i in range(0, p.max_imfs):
-        # print(imfs.shape)  # (l, 2)
-        # print(IP.shape)  # (l, 2)
         emd_df[f"imf_{i}"] = imfs[:, i] if imfs.shape[1] > i else [None] * l  # Intrinsic Mode Function
         emd_df[f"ip_{i}"] = IP[:, i] if IP.shape[1] > i else [None] * l  # Instantaneous Power
         emd_df[f"if_{i}"] = IF[:, i] if IF.shape[1] > i else [None] * l  # Instantaneous Frequency
@@ -400,12 +434,12 @@ def etl_flow(resolution: Resolution, inst: InstrumentUnion, p: Parameter):
     
     tasks = []
     if isinstance(inst, Instrument):
-        df_task = ohlcvt_stream_task.submit(pg, resolution, inst, p.backoff_ticks)
+        df_task = ohlcvt_stream_task.submit(pg, resolution, inst, p.ohlcvt_source, p.backoff_ticks)
         feature_task = calc_features_task.submit(pg, p, resolution, df_task.result(), inst.ID)
         tasks.append(feature_task)
     elif isinstance(inst, InstrumentPair):
-        primary_task = ohlcvt_stream_task.submit(pg, resolution, inst.Primary, p.backoff_ticks)
-        secondary_task = ohlcvt_stream_task.submit(pg, resolution, inst.Secondary, p.backoff_ticks)
+        primary_task = ohlcvt_stream_task.submit(pg, resolution, inst.Primary, p.ohlcvt_source, p.backoff_ticks)
+        secondary_task = ohlcvt_stream_task.submit(pg, resolution, inst.Secondary, p.ohlcvt_source, p.backoff_ticks)
         feature_task_primary = calc_features_task.submit(pg, p, resolution, primary_task.result(), inst.Primary.ID)
         feature_task_secondary = calc_features_task.submit(pg, p, resolution, secondary_task.result(), inst.Secondary.ID)
         premium_task = premium_index_stream_task.submit(pg, inst, resolution, primary_task.result(), secondary_task.result())
@@ -442,7 +476,7 @@ def root(req: Request):
     backoff_ticks = DEFAULT_PARAMETERS["backoff_ticks"] if req.backoff_ticks is None else req.backoff_ticks
 
     params: Parameters = {resol: Parameter(
-        fdim=fdim, max_imfs=max_imfs, thresh=thresh, backoff_ticks=backoff_ticks
+        ohlcvt_source=req.source, fdim=fdim, max_imfs=max_imfs, thresh=thresh, backoff_ticks=backoff_ticks
     ) for resol in resolutions}
 
     etl_flow(
