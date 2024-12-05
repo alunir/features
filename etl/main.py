@@ -442,7 +442,7 @@ def etl_flow(resolution: Resolution, inst: InstrumentUnion, p: Parameter):
         secondary_task = ohlcvt_stream_task.submit(pg, resolution, inst.Secondary, p.ohlcvt_source, p.backoff_ticks)
         feature_task_primary = calc_features_task.submit(pg, p, resolution, primary_task.result(), inst.Primary.ID)
         feature_task_secondary = calc_features_task.submit(pg, p, resolution, secondary_task.result(), inst.Secondary.ID)
-        premium_task = premium_index_stream_task.submit(pg, inst, resolution, primary_task.result(), secondary_task.result())
+        premium_task = premium_index_stream_task.submit(pg, inst, resolution, primary_task.result(), secondary_task.result(), wait_for=[feature_task_primary, feature_task_secondary])
         tasks.extend([feature_task_primary, feature_task_secondary, premium_task])
     else:
         logger.warning(f"Invalid type: {type(inst)}")
