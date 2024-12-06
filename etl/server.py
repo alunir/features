@@ -1,20 +1,19 @@
 import os
-import sys
 import emd
-import ast
 import time
-import logging
 import traceback
 import pandas as pd
 from enum import Enum
 
-from typing import List, Dict, Optional, Union
+import uvicorn
+from fastapi import FastAPI
+from typing import List, Dict, Optional
 from pydantic import BaseModel
 from util.types import OHLCV, FFD, EMD, PremiumIndex
 from util.pg_sync import Connection
 import pymarketstore as pymkts
 
-from prefect import flow, task
+from prefect import flow, task, get_run_logger
 from prefect.task_runners import ConcurrentTaskRunner
 from prefect.futures import wait
 from prefect.utilities.annotations import quote
@@ -26,8 +25,7 @@ marketstore_url = os.environ.get("MARKETSTORE_URL", None)
 # TODO: remove Volume, Trades from columns
 columns = ["Open", "High", "Low", "Close", "Volume", "Trades"]
 
-
-logger = logging.getLogger(__name__)
+app = FastAPI()
 
 
 class OhlcvtSource(Enum):
@@ -267,6 +265,8 @@ def PremiumIndex_from_df(instrument_id1: int, instrument_id2: int, resolution: R
 
 @task(log_prints=True)
 def ohlcvt_stream_task(pg, resolution: Resolution, inst: Instrument, ohlcvt_source: OhlcvtSource, backoff_ticks: int):
+    logger = get_run_logger()
+    
     try:
         if ohlcvt_source == OhlcvtSource.MarketStore:
             client = pymkts.Client(endpoint=f"http://{marketstore_url}:5993/rpc")
@@ -373,6 +373,7 @@ def emd_stream_task(pg, resolution: Resolution, instrument_id: int, p: Parameter
 
 @task(log_prints=True)
 def premium_index_stream_task(pg, inst_pair: InstrumentPair, resolution: Resolution, primary_df: pd.DataFrame, secondary_df: pd.DataFrame):
+    logger = get_run_logger()
     try:
         if not inst_pair.Secondary.Name.startswith(inst_pair.Primary.Name):
             logger.warning(f"Invalid pair: {inst_pair.Primary.Name} and {inst_pair.Secondary.Name}")
@@ -425,6 +426,8 @@ def calc_features_task(pg, p: Parameter, resolution: Resolution, df: pd.DataFram
 
 @flow(log_prints=True, task_runner=ConcurrentTaskRunner())
 def etl_flow(resolution: Resolution, inst: InstrumentUnion, p: Parameter):
+    logger = get_run_logger()
+    
     pg = Connection()
     pg.connection_test()
     logger.info("Connected to Postgres")
@@ -447,66 +450,51 @@ def etl_flow(resolution: Resolution, inst: InstrumentUnion, p: Parameter):
     logger.info("Updated for all instruments")
 
 
-def parse_args(args: List[str]):
-    resolution = Resolution.from_string(args[1])
-    inst = parse_instruments(args[2])
-    backoff_ticks = int(args[3]) if len(args) > 3 else DEFAULT_PARAMETERS["backoff_ticks"]
-    source = OhlcvtSource(args[4]) if len(args) > 4 else DEFAULT_PARAMETERS["source"]
-    thresh = float(args[5]) if len(args) > 5 else DEFAULT_PARAMETERS["thresh"]
-    max_imfs = int(args[6]) if len(args) > 6 else DEFAULT_PARAMETERS["max_imfs"]
-    fdim = float(args[7]) if len(args) > 7 else DEFAULT_PARAMETERS["fdim"]
+@app.post("/")
+def root(req: Request):
+    start = time.time()
+    
+    resolution = Resolution.from_string(req.resolution)
+    
+    if req.inst is None:
+        return {"message": "No 'inst' in request"}
+    if len(req.inst) == 0:
+        return {"message": "No instruments"}
+    if len(req.inst) > 2:
+        return {"message": "Too many instruments"}
+    if len(req.inst) == 1:
+        inst = req.inst[0]
+    if len(req.inst) == 2:
+        inst = InstrumentPair(
+            Primary=req.inst[0],
+            Secondary=req.inst[1]
+        )
 
-    return resolution, inst, backoff_ticks, source, thresh, max_imfs, fdim
+    thresh = DEFAULT_PARAMETERS["thresh"] if req.thresh is None else req.thresh
+    max_imfs = DEFAULT_PARAMETERS["max_imfs"] if req.max_imfs is None else req.max_imfs
+    fdim = DEFAULT_PARAMETERS["fdim"] if req.fdim is None else req.fdim
+    backoff_ticks = DEFAULT_PARAMETERS["backoff_ticks"] if req.backoff_ticks is None else req.backoff_ticks
 
+    params: Parameters = {resol: Parameter(
+        ohlcvt_source=req.source, fdim=fdim, max_imfs=max_imfs, thresh=thresh, backoff_ticks=backoff_ticks
+    ) for resol in resolutions}
 
-def parse_instruments(inst_arg: str) -> Union[str, InstrumentPair]:
-    inst = ast.literal_eval(inst_arg)  # [""]
-    if not inst:
-        raise ValueError("No 'inst' in request")
-    if len(inst) == 1:
-        return inst[0]
-    if len(inst) == 2:
-        return InstrumentPair(Primary=inst[0], Secondary=inst[1])
-    raise ValueError("Too many instruments. Max allowed is 2.")
+    etl_flow(
+        resolution,
+        inst,
+        params[resolution],
+    )
+    
+    end_time = time.time()
 
-
-def create_params(resolutions, source, fdim, max_imfs, thresh, backoff_ticks):
     return {
-        resol: Parameter(
-            ohlcvt_source=source,
-            fdim=fdim,
-            max_imfs=max_imfs,
-            thresh=thresh,
-            backoff_ticks=backoff_ticks
-        ) for resol in resolutions
+        "message": "Success",
+        "resolution": resolution,
+        "inst": inst,
+        "elapsed_time": end_time - start,
     }
 
 
-def main():
-    args = sys.argv
-    start = time.time()
-
-    try:
-        resolution, inst, backoff_ticks, source, thresh, max_imfs, fdim = parse_args(args)
-        params = create_params(resolutions, source, fdim, max_imfs, thresh, backoff_ticks)
-
-        etl_flow(resolution, inst, params[resolution])
-
-        logger.info({
-            "message": "Success",
-            "resolution": resolution,
-            "inst": inst,
-            "elapsed_time": time.time() - start,
-        })
-
-    except Exception as e:
-        logger.error({
-            "message": "Failure",
-            "error": str(e),
-            "elapsed_time": time.time() - start,
-        })
-        raise
-
-
 if __name__ == "__main__":
-    main()
+    port = int(os.getenv("PORT", 8080))
+    uvicorn.run(app, host="0.0.0.0", port=port)

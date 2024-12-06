@@ -24,4 +24,5 @@ COPY ./etl /usr/src/app
 # Prefect ログレベルを設定
 ENV PREFECT_LOGGING_LEVEL=DEBUG
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
+# CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["python", "main.py"]
